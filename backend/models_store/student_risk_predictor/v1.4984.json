@@ -1,0 +1,75 @@
+{
+  "model_name": "student_risk_predictor",
+  "version": "v1.4984",
+  "framework": "scikit-learn",
+  "status": "production",
+  "sha256": "142f1370064492a2e8d121e280246cb0cd9bff398652e0227e1d7d2fcab6ef6a",
+  "trained_at": "2026-10-14T10:49:45.036394+00:00",
+  "features": [
+    "lesson_completion_rate",
+    "avg_quiz_score_norm",
+    "quiz_pass_rate_norm",
+    "failed_quiz_ratio",
+    "days_inactive_norm",
+    "active_courses_norm",
+    "study_time_hours_norm"
+  ],
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": null,
+    "sample_size": 120,
+    "confusion_matrix": [
+      [
+        54,
+        0,
+        0
+      ],
+      [
+        0,
+        42,
+        0
+      ],
+      [
+        0,
+        0,
+        24
+      ]
+    ],
+    "class_report": {
+      "low": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 54.0
+      },
+      "moderate": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 42.0
+      },
+      "high": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 24.0
+      },
+      "accuracy": 1.0,
+      "macro avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 120.0
+      },
+      "weighted avg": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 120.0
+      }
+    }
+  }
+}
