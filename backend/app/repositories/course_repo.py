@@ -64,6 +64,8 @@ class CourseRepository:
         status: str | None = None,
         instructor_id: uuid.UUID | None = None,
         organization_id: uuid.UUID | None = None,
+        allow_global: bool = True,
+        is_super_admin: bool = False,
         sort_by: str = "created_at",
         sort_order: Literal["asc", "desc"] = "desc",
     ) -> tuple[list[Course], int]:
@@ -95,8 +97,20 @@ class CourseRepository:
         if instructor_id:
             query = query.where(Course.instructor_id == instructor_id)
 
-        if organization_id:
-            query = query.where(Course.organization_id == organization_id)
+        if not is_super_admin:
+            if organization_id is not None:
+                if allow_global:
+                    query = query.where(
+                        or_(
+                            Course.organization_id == organization_id,
+                            Course.organization_id.is_(None),
+                        )
+                    )
+                else:
+                    query = query.where(Course.organization_id == organization_id)
+            else:
+                # Unaffiliated / anonymous users can only see global courses
+                query = query.where(Course.organization_id.is_(None))
 
         # Count total
         count_query = select(func.count()).select_from(query.subquery())

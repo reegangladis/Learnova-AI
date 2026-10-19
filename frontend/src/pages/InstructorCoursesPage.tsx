@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Eye,
   X,
+  RotateCcw,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -75,6 +76,33 @@ export function InstructorCoursesPage() {
       queryClient.invalidateQueries({ queryKey: ["instructor-courses"] });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
     },
+    onError: (err: any) => {
+      setPublishErrors([err?.message || "Failed to archive course."]);
+    },
+  });
+
+  // Unpublish Mutation
+  const unpublishMutation = useMutation({
+    mutationFn: (courseId: string) => courseService.unpublishCourse(courseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["instructor-courses"] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (err: any) => {
+      setPublishErrors([err?.message || "Failed to unpublish course."]);
+    },
+  });
+
+  // Unarchive Mutation
+  const unarchiveMutation = useMutation({
+    mutationFn: (courseId: string) => courseService.unarchiveCourse(courseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["instructor-courses"] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+    onError: (err: any) => {
+      setPublishErrors([err?.message || "Failed to restore course to draft."]);
+    },
   });
 
   // Delete Mutation
@@ -84,6 +112,12 @@ export function InstructorCoursesPage() {
       queryClient.invalidateQueries({ queryKey: ["instructor-courses"] });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       setCourseToDelete(null);
+    },
+    onError: (err: any) => {
+      setCourseToDelete(null);
+      setPublishErrors([
+        err?.message || "Failed to delete course. It may have active student enrollments.",
+      ]);
     },
   });
 
@@ -293,6 +327,20 @@ export function InstructorCoursesPage() {
                   </Button>
                 )}
 
+                {/* Unpublish button */}
+                {course.status === "published" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                    onClick={() => unpublishMutation.mutate(course.id)}
+                    disabled={unpublishMutation.isPending}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Unpublish
+                  </Button>
+                )}
+
                 {/* Archive button */}
                 {course.status === "published" && (
                   <Button
@@ -304,6 +352,20 @@ export function InstructorCoursesPage() {
                   >
                     <Archive className="h-3.5 w-3.5" />
                     Archive
+                  </Button>
+                )}
+
+                {/* Restore / Unarchive button */}
+                {course.status === "archived" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={() => unarchiveMutation.mutate(course.id)}
+                    disabled={unarchiveMutation.isPending}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Restore Draft
                   </Button>
                 )}
 

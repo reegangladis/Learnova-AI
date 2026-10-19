@@ -47,8 +47,16 @@ export const courseService = {
     return apiClient.post<CourseDetail>(`/courses/${courseId}/publish`);
   },
 
+  async unpublishCourse(courseId: string): Promise<CourseDetail> {
+    return apiClient.post<CourseDetail>(`/courses/${courseId}/unpublish`);
+  },
+
   async archiveCourse(courseId: string): Promise<CourseDetail> {
     return apiClient.post<CourseDetail>(`/courses/${courseId}/archive`);
+  },
+
+  async unarchiveCourse(courseId: string): Promise<CourseDetail> {
+    return apiClient.post<CourseDetail>(`/courses/${courseId}/unarchive`);
   },
 
   // ---------------------------------------------------------------------------
@@ -97,6 +105,10 @@ export const courseService = {
     return apiClient.post<Lesson>(`/lessons/${lessonId}/reorder`, {
       order_index: orderIndex,
     });
+  },
+
+  async getLesson(lessonId: string): Promise<Lesson> {
+    return apiClient.get<Lesson>(`/lessons/${lessonId}`);
   },
 
   // ---------------------------------------------------------------------------

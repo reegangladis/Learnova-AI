@@ -2,10 +2,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Literal
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.errors import AppExceptions
 from backend.app.core.rbac import SystemPermission, SystemRole
+from backend.app.core.sanitizer import sanitize_html
 from backend.app.models.course import (
     ContentProcessingStatus,
     Course,
@@ -15,6 +17,7 @@ from backend.app.models.course import (
     Lesson,
     LessonContentType,
 )
+from backend.app.models.enrollment import Enrollment, EnrollmentStatus
 from backend.app.models.user import User
 from backend.app.repositories.ai_repo import AIRepository
 from backend.app.repositories.category_repo import CategoryRepository
@@ -61,6 +64,15 @@ class CourseService:
 
     def can_view_course(self, course: Course, current_user: User | None) -> bool:
         """Determines if the current user/visitor can view the course."""
+        # 1. Organization tenant boundary check for private courses
+        if course.organization_id is not None:
+            if not current_user:
+                return False
+            user_roles = {r.upper() for r in current_user.role_names}
+            if "SUPER_ADMIN" not in user_roles and current_user.organization_id != course.organization_id:
+                return False
+
+        # 2. Published courses are viewable by members within tenant boundary (or globally if public)
         if course.status == CourseStatus.PUBLISHED.value:
             return True
 
@@ -170,8 +182,8 @@ class CourseService:
             category_id=data.category_id,
             title=data.title.strip(),
             slug=slug,
-            short_description=data.short_description.strip(),
-            description=data.description.strip(),
+            short_description=sanitize_html(data.short_description.strip()),
+            description=sanitize_html(data.description.strip()),
             thumbnail_url=data.thumbnail_url,
             difficulty=data.difficulty.value,
             duration_minutes=data.duration_minutes,
@@ -227,6 +239,9 @@ class CourseService:
             if not is_staff and not is_self_instructor:
                 effective_status = CourseStatus.PUBLISHED.value
 
+        is_sa = self._is_super_admin(current_user)
+        user_org_id = current_user.organization_id if current_user else None
+
         courses, total = await self.course_repo.list_courses(
             page=page,
             page_size=page_size,
@@ -235,6 +250,9 @@ class CourseService:
             difficulty=difficulty,
             status=effective_status,
             instructor_id=instructor_id,
+            organization_id=user_org_id,
+            allow_global=True,
+            is_super_admin=is_sa,
             sort_by=sort_by,
             sort_order=sort_order,
         )
@@ -266,10 +284,10 @@ class CourseService:
             )
 
         if data.short_description is not None:
-            course.short_description = data.short_description.strip()
+            course.short_description = sanitize_html(data.short_description.strip())
 
         if data.description is not None:
-            course.description = data.description.strip()
+            course.description = sanitize_html(data.description.strip())
 
         if data.thumbnail_url is not None:
             course.thumbnail_url = data.thumbnail_url
@@ -302,6 +320,18 @@ class CourseService:
 
         self.assert_write_access(course, current_user)
 
+        # Protect against deleting courses with active student enrollments
+        if not self._is_super_admin(current_user):
+            stmt = select(func.count()).select_from(Enrollment).where(
+                Enrollment.course_id == course.id,
+                Enrollment.status.in_([EnrollmentStatus.ACTIVE.value, EnrollmentStatus.COMPLETED.value]),
+            )
+            enr_count = await self.db.scalar(stmt)
+            if enr_count and enr_count > 0:
+                raise AppExceptions.ForbiddenException(
+                    message="Cannot delete a course with active enrollments. Archive the course instead to preserve student progress."
+                )
+
         # Purge any RAG document chunks before deletion
         ai_repo = AIRepository(self.db)
         await ai_repo.delete_chunks_for_course(course.id)
@@ -323,6 +353,24 @@ class CourseService:
         await self.db.commit()
         return course
 
+    async def unarchive_course(
+        self, course_id: uuid.UUID, current_user: User
+    ) -> Course:
+        course = await self.course_repo.get_by_id(course_id, include_modules=True)
+        if not course:
+            raise AppExceptions.NotFoundException(message="Course not found.")
+
+        self.assert_write_access(course, current_user)
+        if course.status != CourseStatus.ARCHIVED.value:
+            raise AppExceptions.ValidationException(
+                message="Only archived courses can be unarchived."
+            )
+
+        course.status = CourseStatus.DRAFT.value
+        await self.course_repo.update(course)
+        await self.db.commit()
+        return course
+
     # -----------------------------------------------------------------------
     # Publication Workflow
     # -----------------------------------------------------------------------
@@ -335,6 +383,11 @@ class CourseService:
             raise AppExceptions.NotFoundException(message="Course not found.")
 
         self.assert_write_access(course, current_user)
+
+        if course.status == CourseStatus.ARCHIVED.value:
+            raise AppExceptions.ValidationException(
+                message="Archived courses cannot be published directly. Restore to draft first."
+            )
 
         # Check permission to publish
         user_perms = {p.upper() for p in current_user.permission_codes}
@@ -425,6 +478,34 @@ class CourseService:
 
         course.status = CourseStatus.PUBLISHED.value
         course.published_at = datetime.now(timezone.utc)
+        await self.course_repo.update(course)
+        await self.db.commit()
+        return course
+
+    async def unpublish_course(
+        self, course_id: uuid.UUID, current_user: User
+    ) -> Course:
+        course = await self.course_repo.get_by_id(course_id, include_modules=True)
+        if not course:
+            raise AppExceptions.NotFoundException(message="Course not found.")
+
+        self.assert_write_access(course, current_user)
+
+        user_perms = {p.upper() for p in current_user.permission_codes}
+        if (
+            not self._is_admin(current_user)
+            and SystemPermission.COURSE_PUBLISH.value not in user_perms
+        ):
+            raise AppExceptions.ForbiddenException(
+                message="You lack permission to unpublish courses."
+            )
+
+        if course.status != CourseStatus.PUBLISHED.value:
+            raise AppExceptions.ValidationException(
+                message="Only published courses can be unpublished."
+            )
+
+        course.status = CourseStatus.DRAFT.value
         await self.course_repo.update(course)
         await self.db.commit()
         return course
@@ -538,13 +619,27 @@ class CourseService:
                 message="Invalid resource URL reference provided."
             )
 
+        # Validate downloadable resources if provided in metadata
+        if data.metadata_json and isinstance(data.metadata_json, dict):
+            resources = data.metadata_json.get("downloadable_resources", [])
+            if isinstance(resources, list):
+                for res in resources:
+                    if isinstance(res, dict):
+                        is_valid, err_msg = storage_service.validate_downloadable_resource(res)
+                        if not is_valid:
+                            raise AppExceptions.ValidationException(
+                                message=f"Invalid downloadable resource: {err_msg}"
+                            )
+
+        sanitized_text = sanitize_html(data.text_content) if data.text_content else None
+        sanitized_desc = sanitize_html(data.description.strip()) if data.description else None
 
         lesson = Lesson(
             module_id=module_id,
             title=data.title.strip(),
-            description=data.description.strip() if data.description else None,
+            description=sanitized_desc,
             content_type=data.content_type.value,
-            text_content=data.text_content,
+            text_content=sanitized_text,
             resource_url=data.resource_url,
             duration_minutes=data.duration_minutes,
             order_index=data.order_index or 0,
@@ -578,27 +673,40 @@ class CourseService:
                 )
             lesson.resource_url = data.resource_url
 
+        # Validate downloadable resources if provided in metadata
+        if data.metadata_json is not None:
+            if isinstance(data.metadata_json, dict):
+                resources = data.metadata_json.get("downloadable_resources", [])
+                if isinstance(resources, list):
+                    for res in resources:
+                        if isinstance(res, dict):
+                            is_valid, err_msg = storage_service.validate_downloadable_resource(res)
+                            if not is_valid:
+                                raise AppExceptions.ValidationException(
+                                    message=f"Invalid downloadable resource: {err_msg}"
+                                )
+            lesson.metadata_json = data.metadata_json
+
         content_changed = False
         if data.title is not None:
             lesson.title = data.title.strip()
         if data.description is not None:
-            lesson.description = data.description.strip()
+            lesson.description = sanitize_html(data.description.strip())
         if data.content_type is not None:
             if lesson.content_type != data.content_type.value:
                 content_changed = True
             lesson.content_type = data.content_type.value
         if data.text_content is not None:
-            if lesson.text_content != data.text_content:
+            sanitized = sanitize_html(data.text_content)
+            if lesson.text_content != sanitized:
                 content_changed = True
-            lesson.text_content = data.text_content
+            lesson.text_content = sanitized
         if data.duration_minutes is not None:
             lesson.duration_minutes = data.duration_minutes
         if data.order_index is not None:
             lesson.order_index = data.order_index
         if data.is_preview is not None:
             lesson.is_preview = data.is_preview
-        if data.metadata_json is not None:
-            lesson.metadata_json = data.metadata_json
 
         if content_changed:
             # Purge stale RAG document chunks immediately so outdated content cannot be retrieved
@@ -645,6 +753,76 @@ class CourseService:
         )
         await self.db.commit()
         return reordered
+
+    async def get_lesson_detail(
+        self, lesson_id: uuid.UUID, current_user: User | None
+    ) -> Lesson:
+        lesson = await self.course_repo.get_lesson_by_id(lesson_id)
+        if not lesson:
+            raise AppExceptions.NotFoundException(message="Lesson not found.")
+
+        module = await self.course_repo.get_module_by_id(lesson.module_id)
+        if not module:
+            raise AppExceptions.NotFoundException(message="Module not found.")
+
+        course = await self.course_repo.get_by_id(module.course_id)
+        if not course:
+            raise AppExceptions.NotFoundException(message="Course not found.")
+
+        # Organization & visibility boundary
+        if not self.can_view_course(course, current_user):
+            raise AppExceptions.ForbiddenException(
+                message="You do not have permission to view this lesson."
+            )
+
+        # If course is published
+        if course.status == CourseStatus.PUBLISHED.value:
+            # Preview lessons are accessible by any user permitted to view the course
+            if lesson.is_preview:
+                return lesson
+
+            if not current_user:
+                raise AppExceptions.ForbiddenException(
+                    message="Sign-in or enrollment is required to view full lesson content."
+                )
+
+            # Privileged roles: platform admin, org admin, or course instructor
+            if (
+                self._is_super_admin(current_user)
+                or self._is_admin(current_user)
+                or current_user.id == course.instructor_id
+            ):
+                return lesson
+
+            # Enrolled student check
+            stmt = select(Enrollment).where(
+                Enrollment.user_id == current_user.id,
+                Enrollment.course_id == course.id,
+                Enrollment.status.in_([EnrollmentStatus.ACTIVE.value, EnrollmentStatus.COMPLETED.value]),
+            )
+            enrollment = await self.db.scalar(stmt)
+            if not enrollment:
+                raise AppExceptions.ForbiddenException(
+                    message="You must be enrolled in this course to view this lesson."
+                )
+            return lesson
+
+        # If course is draft or archived, only authorized staff/instructor can preview
+        if not current_user:
+            raise AppExceptions.ForbiddenException(
+                message="You do not have permission to view this draft lesson."
+            )
+
+        if (
+            self._is_super_admin(current_user)
+            or self._is_admin(current_user)
+            or current_user.id == course.instructor_id
+        ):
+            return lesson
+
+        raise AppExceptions.ForbiddenException(
+            message="You do not have permission to view this draft lesson."
+        )
 
     # -----------------------------------------------------------------------
     # Category Management (Admin)

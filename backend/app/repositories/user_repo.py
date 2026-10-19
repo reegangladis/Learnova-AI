@@ -106,10 +106,15 @@ class UserRepository:
         page_size: int = 20,
         search: str | None = None,
         is_active: bool | None = None,
+        organization_id: uuid.UUID | None = None,
     ) -> tuple[list[User], int]:
         """Returns paginated list of users and total count."""
         base_query = select(User)
         count_query = select(func.count(User.id))
+
+        if organization_id is not None:
+            base_query = base_query.where(User.organization_id == organization_id)
+            count_query = count_query.where(User.organization_id == organization_id)
 
         if search:
             search_filter = (

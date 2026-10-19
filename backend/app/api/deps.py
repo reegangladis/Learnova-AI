@@ -82,17 +82,41 @@ def clear_auth_cookies(response: Response) -> None:
     )
 
 
+from datetime import datetime, timezone
+from fastapi.security import OAuth2PasswordBearer
+from backend.app.redis.session_service import get_redis_session_service
+from backend.app.repositories.session_repo import SessionRepository
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_PREFIX}/auth/token",
+    auto_error=False,
+)
+
+
+def _ensure_utc(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 async def get_current_user_optional(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
     learnova_access_token: Annotated[str | None, Cookie()] = None,
     authorization: Annotated[str | None, Header()] = None,
+    bearer_token: Annotated[str | None, Depends(oauth2_scheme)] = None,
 ) -> User | None:
-    """Extracts authenticated user from HttpOnly cookie or Authorization Bearer header."""
+    """Extracts authenticated user from HttpOnly cookie or Authorization Bearer header,
+
+    validating active session status against Redis with database fallback.
+    """
     token: str | None = (
         learnova_access_token
         or request.cookies.get(settings.ACCESS_TOKEN_COOKIE_NAME)
         or request.cookies.get("learnova_access_token")
+        or bearer_token
     )
     if not token and authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
@@ -103,9 +127,39 @@ async def get_current_user_optional(
     try:
         payload = decode_access_token(token)
         user_id_str = payload.get("sub")
+        session_id_str = payload.get("sid")
         if not user_id_str:
             return None
 
+        # 1. Validate session against Redis if session_id is in payload
+        if session_id_str:
+            redis_svc = get_redis_session_service()
+            if await redis_svc.is_session_revoked(session_id_str):
+                return None
+
+            redis_session = await redis_svc.get_session(session_id_str)
+            if redis_session:
+                if not redis_session.get("is_active", True):
+                    return None
+            else:
+                # Fallback: query PostgreSQL sessions table
+                session_repo = SessionRepository(db)
+                try:
+                    db_sess = await session_repo.get_session_by_id(
+                        uuid.UUID(session_id_str)
+                    )
+                    now_utc = datetime.now(timezone.utc)
+                    sess_exp = _ensure_utc(db_sess.expires_at) if db_sess else None
+                    if (
+                        not db_sess
+                        or not db_sess.is_active
+                        or (sess_exp and sess_exp <= now_utc)
+                    ):
+                        return None
+                except Exception:
+                    pass
+
+        # 2. Retrieve user
         user_repo = UserRepository(db)
         user = await user_repo.get_by_id(uuid.UUID(user_id_str))
         if not user or not user.is_active:

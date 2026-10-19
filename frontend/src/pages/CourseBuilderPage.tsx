@@ -56,6 +56,7 @@ export function CourseBuilderPage() {
 
   const [publishErrors, setPublishErrors] = useState<string[] | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [previewLesson, setPreviewLesson] = useState<Lesson | null>(null);
 
   // Fetch course details with modules & lessons
   const {
@@ -610,6 +611,15 @@ export function CourseBuilderPage() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => setPreviewLesson(les)}
+                              title="Preview lesson content"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               className="h-7 w-7 p-0"
                               onClick={() => openEditLessonModal(mod.id, les)}
                               title="Edit lesson"
@@ -815,6 +825,186 @@ export function CourseBuilderPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Lesson Preview Modal */}
+      {previewLesson && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in fade-in-50 zoom-in-95 my-8">
+            <div className="flex items-start justify-between border-b border-border pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="capitalize text-xs">
+                    {previewLesson.content_type}
+                  </Badge>
+                  {previewLesson.is_preview && (
+                    <Badge variant="outline" className="text-xs text-primary border-primary/30">
+                      Public Preview
+                    </Badge>
+                  )}
+                  {previewLesson.duration_minutes > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {previewLesson.duration_minutes} mins
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {previewLesson.title}
+                </h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setPreviewLesson(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {previewLesson.description && (
+              <p className="text-xs text-muted-foreground italic">
+                {previewLesson.description}
+              </p>
+            )}
+
+            {/* Lesson Content Body */}
+            <div className="space-y-4 pt-2">
+              {previewLesson.content_type === "text" && (
+                <div className="bg-muted/20 border border-border rounded-lg p-4 text-sm leading-relaxed max-h-96 overflow-y-auto">
+                  {previewLesson.text_content ? (
+                    <div
+                      className="prose prose-sm dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: previewLesson.text_content }}
+                    />
+                  ) : (
+                    <p className="text-muted-foreground italic text-xs">No text content written yet.</p>
+                  )}
+                </div>
+              )}
+
+              {previewLesson.content_type === "video" && (
+                <div className="space-y-3">
+                  {previewLesson.resource_url ? (
+                    <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center gap-2 text-xs text-foreground font-medium">
+                        <Video className="h-4 w-4 text-blue-500" />
+                        <span>Video Stream Reference</span>
+                      </div>
+                      <p className="text-xs font-mono text-muted-foreground break-all bg-background/50 p-2 rounded border border-border">
+                        {previewLesson.resource_url}
+                      </p>
+                      <a
+                        href={previewLesson.resource_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Open video source in new tab
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground italic text-xs">No video resource URL assigned.</p>
+                  )}
+                </div>
+              )}
+
+              {previewLesson.content_type === "pdf" && (
+                <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs text-foreground font-medium">
+                    <FileCode className="h-4 w-4 text-amber-500" />
+                    <span>PDF / Document Resource</span>
+                  </div>
+                  {previewLesson.resource_url ? (
+                    <>
+                      <p className="text-xs font-mono text-muted-foreground break-all bg-background/50 p-2 rounded border border-border">
+                        {previewLesson.resource_url}
+                      </p>
+                      <a
+                        href={previewLesson.resource_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Open document in viewer
+                      </a>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground italic text-xs">No document reference specified.</p>
+                  )}
+                </div>
+              )}
+
+              {previewLesson.content_type === "external_resource" && (
+                <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs text-foreground font-medium">
+                    <ExternalLink className="h-4 w-4 text-violet-500" />
+                    <span>External Learning Material</span>
+                  </div>
+                  {previewLesson.resource_url ? (
+                    <>
+                      <p className="text-xs font-mono text-muted-foreground break-all bg-background/50 p-2 rounded border border-border">
+                        {previewLesson.resource_url}
+                      </p>
+                      <a
+                        href={previewLesson.resource_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Visit resource link
+                      </a>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground italic text-xs">No URL specified.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Downloadable Resources section if present */}
+              {previewLesson.metadata_json &&
+                Array.isArray((previewLesson.metadata_json as Record<string, any>)?.downloadable_resources) &&
+                (previewLesson.metadata_json as Record<string, any>).downloadable_resources.length > 0 && (
+                  <div className="border-t border-border pt-3 space-y-2">
+                    <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                      Supplementary Resources
+                    </h4>
+                    <div className="space-y-1.5">
+                      {(previewLesson.metadata_json as Record<string, any>).downloadable_resources.map(
+                        (res: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2 rounded border border-border bg-background/50 text-xs"
+                          >
+                            <span className="font-medium truncate max-w-sm">{res.name || `Resource #${idx + 1}`}</span>
+                            {res.url && (
+                              <a
+                                href={res.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline shrink-0"
+                              >
+                                Download ({res.file_type || "file"})
+                              </a>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-border">
+              <Button size="sm" variant="outline" onClick={() => setPreviewLesson(null)}>
+                Close Preview
+              </Button>
+            </div>
           </div>
         </div>
       )}

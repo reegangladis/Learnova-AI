@@ -2,6 +2,7 @@ import os
 import sys
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from typing import Any, Set
 
 # Ensure pure-python fallback for SQLAlchemy
 os.environ["DISABLE_SQLALCHEMY_CEXT"] = "1"
@@ -66,6 +67,91 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         await conn.run_sync(Base.metadata.drop_all)
 
 
+
+class InMemoryRedisClient:
+    """Deterministic in-memory Redis client for unit & integration testing."""
+
+    def __init__(self):
+        self.data: dict[str, str] = {}
+        self.sets: dict[str, Set[str]] = {}
+        self.ttls: dict[str, int] = {}
+
+    async def get(self, key: str) -> str | None:
+        return self.data.get(key)
+
+    async def set(self, key: str, value: str, ex: int | None = None) -> bool:
+        self.data[key] = str(value)
+        if ex is not None:
+            self.ttls[key] = ex
+        return True
+
+    async def delete(self, key: str) -> int:
+        count = 0
+        if key in self.data:
+            del self.data[key]
+            count += 1
+        if key in self.sets:
+            del self.sets[key]
+            count += 1
+        return count
+
+    async def exists(self, key: str) -> int:
+        return 1 if (key in self.data or key in self.sets) else 0
+
+    async def expire(self, key: str, ttl: int) -> bool:
+        self.ttls[key] = ttl
+        return True
+
+    async def sadd(self, key: str, *members: str) -> int:
+        if key not in self.sets:
+            self.sets[key] = set()
+        for m in members:
+            self.sets[key].add(str(m))
+        return len(members)
+
+    async def smembers(self, key: str) -> Set[str]:
+        return self.sets.get(key, set()).copy()
+
+    async def srem(self, key: str, *members: str) -> int:
+        if key not in self.sets:
+            return 0
+        count = 0
+        for m in members:
+            str_m = str(m)
+            if str_m in self.sets[key]:
+                self.sets[key].remove(str_m)
+                count += 1
+        return count
+
+    async def ping(self) -> bool:
+        return True
+
+    async def info(self, section: str = "") -> dict[str, Any]:
+        return {"redis_version": "7.2.0-test"}
+
+    async def aclose(self) -> None:
+        pass
+
+
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def setup_redis():
+    """Autouse fixture providing deterministic fast Redis mock for tests."""
+    mock_redis = InMemoryRedisClient()
+    import backend.app.redis.client as r_client
+    import backend.app.redis.session_service as r_sess
+
+    orig_client = r_client._redis_client
+    orig_sess = r_sess._redis_session_service
+
+    r_client._redis_client = mock_redis
+    r_sess._redis_session_service = r_sess.RedisSessionService(mock_redis)
+
+    yield mock_redis
+
+    r_client._redis_client = orig_client
+    r_sess._redis_session_service = orig_sess
+
+
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Test client configured with overridden DB dependency for isolation."""
@@ -92,3 +178,4 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 async def async_client(client: AsyncClient) -> AsyncClient:
     """Alias for backwards compatibility with Phase 1 tests."""
     return client
+

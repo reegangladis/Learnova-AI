@@ -89,6 +89,19 @@ class AuthResponse(BaseModel):
     success: bool = True
     user: UserResponse
     message: str | None = None
+    access_token: str | None = Field(
+        None, description="Signed JWT Bearer access token for header-based API clients"
+    )
+    token_type: str | None = Field("bearer", description="Token authentication scheme")
+
+
+class OAuth2TokenResponse(BaseModel):
+    """Standard RFC 6749 OAuth2 Token Response."""
+
+    access_token: str = Field(..., description="JWT Bearer token")
+    token_type: str = Field(default="bearer", description="Token type")
+    expires_in: int = Field(default=900, description="Expiration in seconds")
+    user: UserResponse | None = Field(default=None, description="Authenticated user summary")
 
 
 class SessionResponse(BaseModel):

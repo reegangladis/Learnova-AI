@@ -24,15 +24,22 @@ def get_engine() -> AsyncEngine:
     global _engine
     if _engine is None:
         settings = get_settings()
-        _engine = create_async_engine(
-            settings.DATABASE_URL,
-            echo=False,
-            future=True,
-            pool_size=settings.DB_POOL_SIZE,
-            max_overflow=settings.DB_MAX_OVERFLOW,
-            pool_timeout=settings.DB_POOL_TIMEOUT,
-            pool_pre_ping=True,
-        )
+        if "sqlite" in settings.DATABASE_URL:
+            _engine = create_async_engine(
+                settings.DATABASE_URL,
+                echo=False,
+                future=True,
+            )
+        else:
+            _engine = create_async_engine(
+                settings.DATABASE_URL,
+                echo=False,
+                future=True,
+                pool_size=settings.DB_POOL_SIZE,
+                max_overflow=settings.DB_MAX_OVERFLOW,
+                pool_timeout=settings.DB_POOL_TIMEOUT,
+                pool_pre_ping=True,
+            )
     return _engine
 
 
@@ -81,22 +88,26 @@ async def check_database_connection() -> dict[str, Any]:
     start_time = time.perf_counter()
 
     try:
+        settings = get_settings()
+        query = (
+            text("SELECT 1 AS alive, sqlite_version() AS version;")
+            if "sqlite" in settings.DATABASE_URL
+            else text("SELECT 1 AS alive, version() AS version;")
+        )
         async with engine.connect() as conn:
-            result = await conn.execute(
-                text("SELECT 1 AS alive, version() AS version;")
-            )
+            result = await conn.execute(query)
             row = result.first()
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
-            pg_version = row[1] if row and len(row) > 1 else "Unknown"
+            db_version = str(row[1]) if row and len(row) > 1 else "Unknown"
 
             return {
                 "status": "healthy",
                 "connected": True,
                 "latency_ms": duration_ms,
-                "version": pg_version.split(" on ")[0]
-                if " on " in pg_version
-                else pg_version,
+                "version": db_version.split(" on ")[0]
+                if " on " in db_version
+                else db_version,
                 "error": None,
             }
     except Exception as e:  # noqa: BLE001

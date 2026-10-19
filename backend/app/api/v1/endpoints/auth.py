@@ -2,6 +2,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, Request, Response, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 from backend.app.api.deps import (
     clear_auth_cookies,
@@ -18,6 +19,7 @@ from backend.app.schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
+    OAuth2TokenResponse,
     RegisterRequest,
     ResendVerificationRequest,
     ResetPasswordRequest,
@@ -108,6 +110,53 @@ async def login(
         success=True,
         user=UserResponse.model_validate(user),
         message="Authentication successful.",
+        access_token=access_token,
+        token_type="bearer",
+    )
+
+
+@router.post(
+    "/token",
+    response_model=OAuth2TokenResponse,
+    summary="OAuth2 Password Flow token endpoint",
+    description="Standard OAuth2 password grant endpoint for obtaining Bearer tokens.",
+    dependencies=[
+        Depends(
+            rate_limit(
+                "auth_token", max_requests=settings.RATE_LIMIT_LOGIN_MAX_REQUESTS
+            )
+        )
+    ],
+)
+async def oauth2_token_login(
+    request: Request,
+    response: Response,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+) -> OAuth2TokenResponse:
+    ip = RateLimiter.get_client_ip(request)
+    ua = request.headers.get("user-agent")
+
+    user, _session, access_token, refresh_token = await auth_service.authenticate_user(
+        email=form_data.username,
+        password=form_data.password,
+        remember_me=False,
+        ip_address=ip,
+        user_agent=ua,
+    )
+
+    set_auth_cookies(
+        response=response,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        remember_me=False,
+    )
+
+    return OAuth2TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user=UserResponse.model_validate(user),
     )
 
 
@@ -189,6 +238,8 @@ async def refresh_token(
         success=True,
         user=UserResponse.model_validate(user),
         message="Session refreshed successfully.",
+        access_token=access_token,
+        token_type="bearer",
     )
 
 

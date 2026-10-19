@@ -76,6 +76,7 @@ async def update_my_profile(
     dependencies=[Depends(require_permission(SystemPermission.USER_READ.value))],
 )
 async def list_users_admin(
+    current_admin: Annotated[User, Depends(get_current_user)],
     user_service: Annotated[UserService, Depends(get_user_service)],
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
@@ -84,11 +85,17 @@ async def list_users_admin(
     ),
     is_active: bool | None = Query(default=None, description="Filter by active status"),
 ) -> PaginatedUsersResponse:
+    admin_roles = {r.upper() for r in current_admin.role_names}
+    org_filter = None
+    if "SUPER_ADMIN" not in admin_roles and current_admin.organization_id is not None:
+        org_filter = current_admin.organization_id
+
     users, total = await user_service.list_users(
         page=page,
         page_size=page_size,
         search=search,
         is_active=is_active,
+        organization_id=org_filter,
     )
     total_pages = math.ceil(total / page_size) if total > 0 else 1
 
@@ -109,9 +116,11 @@ async def list_users_admin(
 )
 async def get_user_admin(
     user_id: uuid.UUID,
+    current_admin: Annotated[User, Depends(get_current_user)],
     user_service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
     user = await user_service.get_user_by_id(user_id)
+    user_service.assert_admin_access_to_user(user, current_admin)
     return UserResponse.model_validate(user)
 
 
@@ -131,6 +140,9 @@ async def update_user_admin(
     ],
     user_service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
+    target_user = await user_service.get_user_by_id(user_id)
+    user_service.assert_admin_access_to_user(target_user, current_admin)
+
     ip = RateLimiter.get_client_ip(request)
     ua = request.headers.get("user-agent")
 
@@ -159,6 +171,9 @@ async def activate_user_admin(
     ],
     user_service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
+    target_user = await user_service.get_user_by_id(user_id)
+    user_service.assert_admin_access_to_user(target_user, current_admin)
+
     ip = RateLimiter.get_client_ip(request)
     ua = request.headers.get("user-agent")
 
@@ -187,6 +202,9 @@ async def deactivate_user_admin(
     ],
     user_service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
+    target_user = await user_service.get_user_by_id(user_id)
+    user_service.assert_admin_access_to_user(target_user, current_admin)
+
     ip = RateLimiter.get_client_ip(request)
     ua = request.headers.get("user-agent")
 
@@ -218,6 +236,9 @@ async def assign_user_roles_admin(
     ],
     user_service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
+    target_user = await user_service.get_user_by_id(user_id)
+    user_service.assert_admin_access_to_user(target_user, current_admin)
+
     ip = RateLimiter.get_client_ip(request)
     ua = request.headers.get("user-agent")
 

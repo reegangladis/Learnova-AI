@@ -16,6 +16,7 @@ from backend.app.core.security import (
 )
 from backend.app.models.session import Session
 from backend.app.models.user import User
+from backend.app.redis.session_service import get_redis_session_service
 from backend.app.repositories.audit_repo import AuditRepository
 from backend.app.repositories.role_repo import RoleRepository
 from backend.app.repositories.session_repo import SessionRepository
@@ -47,6 +48,7 @@ class AuthService:
         self.token_repo = TokenRepository(db)
         self.audit_repo = AuditRepository(db)
         self.email_service = get_email_service()
+        self.redis_session_service = get_redis_session_service()
 
     async def register_user(
         self,
@@ -239,6 +241,18 @@ class AuthService:
             expires_at=refresh_expires_at,
         )
 
+        # Store active session in Redis with TTL
+        await self.redis_session_service.store_session(
+            session_id=session.id,
+            user_id=user.id,
+            email=user.email,
+            roles=user.role_names,
+            permissions=user.permission_codes,
+            expires_at=session_expires_at,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
         # Create Access Token
         access_token = create_access_token(
             user_id=user.id,
@@ -304,10 +318,11 @@ class AuthService:
 
         # REFRESH TOKEN REUSE DETECTION
         if refresh_token_record.is_revoked:
-            # A revoked token was presented again! Invalidate the entire token family & session immediately.
+            # A revoked token was presented again! Invalidate the entire token family & session immediately in DB & Redis.
             await self.session_repo.revoke_token_family(
                 refresh_token_record.token_family
             )
+            await self.redis_session_service.revoke_all_user_sessions(user.id)
             await self.audit_repo.record_audit_event(
                 event_type="REFRESH_TOKEN_REUSE_DETECTED",
                 user_id=user.id,
@@ -360,6 +375,12 @@ class AuthService:
             session_id=session.id,
         )
 
+        # Extend session in Redis
+        await self.redis_session_service.extend_session(
+            session_id=session.id,
+            new_expires_at=new_refresh_expires_at,
+        )
+
         await self.audit_repo.record_audit_event(
             event_type="REFRESH_TOKEN_ROTATED",
             user_id=user.id,
@@ -388,6 +409,9 @@ class AuthService:
 
         if target_session_id:
             await self.session_repo.revoke_session(target_session_id)
+            await self.redis_session_service.revoke_session(
+                target_session_id, user_id=user_id
+            )
             await self.audit_repo.record_audit_event(
                 event_type="LOGOUT",
                 user_id=user_id,
@@ -404,6 +428,7 @@ class AuthService:
     ) -> None:
         """Revokes all active sessions for the user across all devices."""
         await self.session_repo.revoke_all_user_sessions(user_id=user_id)
+        await self.redis_session_service.revoke_all_user_sessions(user_id=user_id)
         await self.audit_repo.record_audit_event(
             event_type="SESSION_REVOKED",
             user_id=user_id,
@@ -493,8 +518,9 @@ class AuthService:
         # Mark token as used
         await self.token_repo.mark_password_reset_token_used(token_rec.id)
 
-        # Invalidate all existing sessions for security
+        # Invalidate all existing sessions for security in DB & Redis
         await self.session_repo.revoke_all_user_sessions(user.id)
+        await self.redis_session_service.revoke_all_user_sessions(user.id)
 
         await self.audit_repo.record_audit_event(
             event_type="PASSWORD_RESET_COMPLETED",

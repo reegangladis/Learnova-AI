@@ -3,6 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.security import hash_token
+from backend.app.repositories.session_repo import SessionRepository
 from backend.app.repositories.token_repo import TokenRepository
 from backend.app.repositories.user_repo import UserRepository
 
@@ -448,7 +449,7 @@ async def test_session_listing_and_revocation(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_logout_all_sessions(client: AsyncClient):
+async def test_logout_all_sessions(client: AsyncClient, db_session: AsyncSession):
     """Verify logout-all terminates all active sessions for current user."""
     reg_payload = {
         "email": "logoutall.test@learnova.ai",
@@ -473,12 +474,19 @@ async def test_logout_all_sessions(client: AsyncClient):
     assert logout_all_res.status_code == 200
     assert logout_all_res.json()["success"] is True
 
-    # Sessions list should now be empty
+    # Any subsequent request with the revoked session's token must be rejected with 401
     sess_res = await client.get(
         "/api/v1/auth/sessions", cookies={"learnova_access_token": access_token}
     )
-    assert sess_res.status_code == 200
-    assert len(sess_res.json()) == 0
+    assert sess_res.status_code == 401
+
+    # Verify directly in DB that all active sessions have been revoked
+    user_repo = UserRepository(db_session)
+    user = await user_repo.get_by_email("logoutall.test@learnova.ai")
+    assert user is not None
+    session_repo = SessionRepository(db_session)
+    active_sessions = await session_repo.get_user_active_sessions(user.id)
+    assert len(active_sessions) == 0
 
 
 @pytest.mark.asyncio
@@ -499,4 +507,72 @@ async def test_resend_verification_email(client: AsyncClient):
     )
     assert res.status_code == 200
     assert res.json()["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_oauth2_password_flow_token_endpoint(client: AsyncClient):
+    """Verify standard RFC 6749 OAuth2 Password flow endpoint (/api/v1/auth/token)."""
+    reg_payload = {
+        "email": "oauth2.user@learnova.ai",
+        "password": "SecurePassword123!",
+        "confirm_password": "SecurePassword123!",
+        "first_name": "OAuth2",
+        "last_name": "Tester",
+    }
+    await client.post("/api/v1/auth/register", json=reg_payload)
+
+    # Standard OAuth2 application/x-www-form-urlencoded request
+    token_res = await client.post(
+        "/api/v1/auth/token",
+        data={
+            "username": "oauth2.user@learnova.ai",
+            "password": "SecurePassword123!",
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert token_res.status_code == 200
+    data = token_res.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+    assert data["expires_in"] == 900
+    assert data["user"]["email"] == "oauth2.user@learnova.ai"
+
+    # Authenticate via Authorization Bearer header (no cookies)
+    bearer_token = data["access_token"]
+    me_res = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {bearer_token}"},
+    )
+    assert me_res.status_code == 200
+    assert me_res.json()["email"] == "oauth2.user@learnova.ai"
+
+
+@pytest.mark.asyncio
+async def test_login_response_includes_bearer_token(client: AsyncClient):
+    """Verify JSON login response provides both cookies and access_token."""
+    reg_payload = {
+        "email": "json.bearer@learnova.ai",
+        "password": "SecurePassword123!",
+        "confirm_password": "SecurePassword123!",
+        "first_name": "Json",
+        "last_name": "Bearer",
+    }
+    await client.post("/api/v1/auth/register", json=reg_payload)
+
+    login_res = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "json.bearer@learnova.ai", "password": "SecurePassword123!"},
+    )
+    assert login_res.status_code == 200
+    res_data = login_res.json()
+    assert res_data["access_token"] is not None
+    assert res_data["token_type"] == "bearer"
+
+    # Use returned Bearer token in header
+    me_res = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {res_data['access_token']}"},
+    )
+    assert me_res.status_code == 200
+    assert me_res.json()["email"] == "json.bearer@learnova.ai"
 

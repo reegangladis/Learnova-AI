@@ -267,6 +267,34 @@ async def archive_course(
     return to_course_detail_response(course, current_user)
 
 
+@router.post(
+    "/{course_id}/unpublish",
+    response_model=CourseDetailResponse,
+    summary="Revert published course back to draft status",
+)
+async def unpublish_course(
+    course_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    course_service: Annotated[CourseService, Depends(get_course_service)],
+) -> CourseDetailResponse:
+    course = await course_service.unpublish_course(course_id, current_user)
+    return to_course_detail_response(course, current_user)
+
+
+@router.post(
+    "/{course_id}/unarchive",
+    response_model=CourseDetailResponse,
+    summary="Restore archived course back to draft status",
+)
+async def unarchive_course(
+    course_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    course_service: Annotated[CourseService, Depends(get_course_service)],
+) -> CourseDetailResponse:
+    course = await course_service.unarchive_course(course_id, current_user)
+    return to_course_detail_response(course, current_user)
+
+
 @router.get(
     "/{course_id}/modules",
     response_model=list[ModuleResponse],
@@ -411,3 +439,18 @@ async def reorder_lesson(
         lesson_id, payload.order_index, current_user
     )
     return LessonResponse.model_validate(lesson)
+
+
+@lessons_router.get(
+    "/{lesson_id}",
+    response_model=LessonResponse,
+    summary="Get single lesson details with preview / enrollment validation",
+)
+async def get_lesson(
+    lesson_id: uuid.UUID,
+    course_service: Annotated[CourseService, Depends(get_course_service)],
+    current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
+) -> LessonResponse:
+    lesson = await course_service.get_lesson_detail(lesson_id, current_user)
+    return LessonResponse.model_validate(lesson)
+

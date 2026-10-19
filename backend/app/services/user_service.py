@@ -43,12 +43,32 @@ class UserService:
         )
         return user
 
+    def assert_admin_access_to_user(
+        self, target_user: User, admin_user: User
+    ) -> None:
+        """Verifies that an administrative user has jurisdiction over target_user."""
+        admin_roles = {r.upper() for r in admin_user.role_names}
+        if "SUPER_ADMIN" in admin_roles:
+            return
+
+        # An organization admin can only manage users within their organization
+        if admin_user.organization_id is not None:
+            if target_user.organization_id != admin_user.organization_id:
+                raise AppExceptions.ForbiddenException(
+                    message="Cannot manage users belonging to a different organization."
+                )
+        elif target_user.organization_id is not None:
+            raise AppExceptions.ForbiddenException(
+                message="Cannot manage users belonging to an organization."
+            )
+
     async def list_users(
         self,
         page: int = 1,
         page_size: int = 20,
         search: str | None = None,
         is_active: bool | None = None,
+        organization_id: uuid.UUID | None = None,
     ) -> tuple[list[User], int]:
         """Administrative query to list and filter users with pagination."""
         return await self.user_repo.list_users(
@@ -56,6 +76,7 @@ class UserService:
             page_size=page_size,
             search=search,
             is_active=is_active,
+            organization_id=organization_id,
         )
 
     async def get_user_by_id(self, user_id: uuid.UUID) -> User:

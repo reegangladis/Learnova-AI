@@ -80,3 +80,9 @@ infrastructure/backups/*
 !infrastructure/backups/.gitkeep
 *.sql.gz
 *.sha256
+
+# Database files & local scratch
+*.db
+*.sqlite
+*.sqlite3
+scratch/

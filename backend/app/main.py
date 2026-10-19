@@ -24,6 +24,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(
         f"Starting {settings.APP_NAME} v{settings.APP_VERSION} [Env: {settings.APP_ENV}]..."
     )
+    from backend.app.db.init_db import init_db
+    try:
+        await init_db()
+    except Exception as exc:
+        logger.warning(f"Database auto-initialization check skipped/deferred: {exc}")
     yield
     logger.info("Initiating graceful shutdown for Learnova AI Backend...")
     await close_db_engine()

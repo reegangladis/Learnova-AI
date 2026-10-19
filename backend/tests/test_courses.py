@@ -549,6 +549,13 @@ async def test_cross_organization_boundary_protection(client: AsyncClient, db_se
     beta_admin_cookie = await get_auth_cookie(client, "admin.beta@learnova.ai")
     super_admin_cookie = await get_auth_cookie(client, "super.admin@learnova.ai")
 
+    cat_res = await client.post(
+        "/api/v1/course-categories",
+        json={"name": "Alpha Internal Security"},
+        cookies=super_admin_cookie,
+    )
+    cat_id = cat_res.json()["id"]
+
     # Alpha instructor creates a course belonging to Org Alpha
     res = await client.post(
         "/api/v1/courses",
@@ -556,6 +563,7 @@ async def test_cross_organization_boundary_protection(client: AsyncClient, db_se
             "title": "Alpha Proprietary Course",
             "short_description": "Exclusive training for Alpha personnel",
             "description": "Proprietary syllabus and trade secrets of Alpha Corp",
+            "category_id": cat_id,
         },
         cookies=alpha_inst_cookie,
     )
@@ -578,3 +586,547 @@ async def test_cross_organization_boundary_protection(client: AsyncClient, db_se
     )
     assert super_edit.status_code == 200
     assert super_edit.json()["title"] == "Super Admin Verified Alpha Course"
+
+    # Add module & lesson, then publish Alpha course
+    mod_res = await client.post(
+        f"/api/v1/courses/{course_id}/modules",
+        json={"title": "Alpha Module 1", "sort_order": 1},
+        cookies=alpha_inst_cookie,
+    )
+    assert mod_res.status_code == 201
+    mod_id = mod_res.json()["id"]
+
+    les_res = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={"title": "Alpha Lesson 1", "sort_order": 1, "text_content": "Confidential Alpha material"},
+        cookies=alpha_inst_cookie,
+    )
+    assert les_res.status_code == 201
+
+    pub_res = await client.post(f"/api/v1/courses/{course_id}/publish", cookies=alpha_inst_cookie)
+    assert pub_res.status_code == 200
+
+    # Beta admin attempts to view Alpha course detail -> 403 Forbidden
+    cross_view = await client.get(
+        f"/api/v1/courses/{course_id}",
+        cookies=beta_admin_cookie,
+    )
+    assert cross_view.status_code == 403
+
+    # Anonymous visitor attempts to view Alpha course detail -> 403 Forbidden
+    client.cookies.clear()
+    anon_view = await client.get(f"/api/v1/courses/{course_id}")
+    assert anon_view.status_code == 403
+
+    # Beta admin listing courses should NOT see Alpha course
+    beta_catalog = await client.get("/api/v1/courses", cookies=beta_admin_cookie)
+    assert not any(c["id"] == course_id for c in beta_catalog.json()["items"])
+
+    # Super admin CAN view it
+    super_view = await client.get(f"/api/v1/courses/{course_id}", cookies=super_admin_cookie)
+    assert super_view.status_code == 200
+
+    # Alpha instructor CAN view it
+    alpha_view = await client.get(f"/api/v1/courses/{course_id}", cookies=alpha_inst_cookie)
+    assert alpha_view.status_code == 200
+
+
+# ==============================================================================
+# 5. Phase 3 Lifecycle: Unpublish, Unarchive, and Invalid Transitions
+# ==============================================================================
+
+
+@pytest.mark.asyncio
+async def test_course_lifecycle_unpublish_and_unarchive(client: AsyncClient, db_session: AsyncSession):
+    await create_user(db_session, "inst.life@learnova.ai", SystemRole.INSTRUCTOR.value)
+    inst_cookie = await get_auth_cookie(client, "inst.life@learnova.ai")
+
+    # Create category & course
+    cat_res = await client.post(
+        "/api/v1/course-categories",
+        json={"name": "Lifecycle Science"},
+        cookies=inst_cookie,
+    )
+    # Admin is required for category creation; create user as Admin or use Platform Super Admin
+    await create_user(db_session, "admin.life@learnova.ai", SystemRole.SUPER_ADMIN.value)
+    admin_cookie = await get_auth_cookie(client, "admin.life@learnova.ai")
+    cat_res = await client.post(
+        "/api/v1/course-categories",
+        json={"name": "Lifecycle Science"},
+        cookies=admin_cookie,
+    )
+    cat_id = cat_res.json()["id"]
+
+    res = await client.post(
+        "/api/v1/courses",
+        json={
+            "title": "Quantum Computing 101",
+            "short_description": "An introduction to qubits and superposition",
+            "description": "Comprehensive course covering quantum gates, algorithms, and applications.",
+            "category_id": cat_id,
+        },
+        cookies=inst_cookie,
+    )
+    course_id = res.json()["id"]
+    assert res.json()["status"] == "draft"
+
+    # Add module & lesson to satisfy completeness
+    mod_res = await client.post(
+        f"/api/v1/courses/{course_id}/modules",
+        json={"title": "Module 1", "sort_order": 1},
+        cookies=inst_cookie,
+    )
+    mod_id = mod_res.json()["id"]
+
+    await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={"title": "Lesson 1", "sort_order": 1, "text_content": "Introduction to Superposition"},
+        cookies=inst_cookie,
+    )
+
+    # 1. Publish course -> PUBLISHED
+    pub_res = await client.post(f"/api/v1/courses/{course_id}/publish", cookies=inst_cookie)
+    assert pub_res.status_code == 200
+    assert pub_res.json()["status"] == "published"
+
+    # 2. Unpublish course -> DRAFT
+    unpub_res = await client.post(f"/api/v1/courses/{course_id}/unpublish", cookies=inst_cookie)
+    assert unpub_res.status_code == 200
+    assert unpub_res.json()["status"] == "draft"
+
+    # 3. Cannot unpublish a course that is already in DRAFT
+    unpub_dup = await client.post(f"/api/v1/courses/{course_id}/unpublish", cookies=inst_cookie)
+    assert unpub_dup.status_code == 422
+    assert "Only published courses can be unpublished" in unpub_dup.json()["error"]["message"]
+
+    # 4. Archive course -> ARCHIVED
+    arch_res = await client.post(f"/api/v1/courses/{course_id}/archive", cookies=inst_cookie)
+    assert arch_res.status_code == 200
+    assert arch_res.json()["status"] == "archived"
+
+    # 5. Cannot publish an archived course directly (must restore to draft first)
+    pub_arch = await client.post(f"/api/v1/courses/{course_id}/publish", cookies=inst_cookie)
+    assert pub_arch.status_code == 422
+    assert "Archived courses cannot be published directly" in pub_arch.json()["error"]["message"]
+
+    # 6. Unarchive course -> DRAFT
+    unarch_res = await client.post(f"/api/v1/courses/{course_id}/unarchive", cookies=inst_cookie)
+    assert unarch_res.status_code == 200
+    assert unarch_res.json()["status"] == "draft"
+
+    # 7. Cannot unarchive a course that is already in DRAFT
+    unarch_dup = await client.post(f"/api/v1/courses/{course_id}/unarchive", cookies=inst_cookie)
+    assert unarch_dup.status_code == 422
+    assert "Only archived courses can be unarchived" in unarch_dup.json()["error"]["message"]
+
+
+# ==============================================================================
+# 6. Active Enrollment Deletion Protection
+# ==============================================================================
+
+
+@pytest.mark.asyncio
+async def test_course_deletion_protection_with_active_enrollments(
+    client: AsyncClient, db_session: AsyncSession
+):
+    await create_user(db_session, "inst.del@learnova.ai", SystemRole.INSTRUCTOR.value)
+    await create_user(db_session, "stud.del@learnova.ai", SystemRole.STUDENT.value)
+    await create_user(db_session, "admin.del@learnova.ai", SystemRole.SUPER_ADMIN.value)
+
+    inst_cookie = await get_auth_cookie(client, "inst.del@learnova.ai")
+    stud_cookie = await get_auth_cookie(client, "stud.del@learnova.ai")
+    admin_cookie = await get_auth_cookie(client, "admin.del@learnova.ai")
+
+    cat_res = await client.post(
+        "/api/v1/course-categories",
+        json={"name": "DevOps & Cloud"},
+        cookies=admin_cookie,
+    )
+    cat_id = cat_res.json()["id"]
+
+    res = await client.post(
+        "/api/v1/courses",
+        json={
+            "title": "Kubernetes Mastery",
+            "short_description": "Production container orchestration at scale",
+            "description": "Learn deployments, stateful sets, ingress controllers, and service meshes.",
+            "category_id": cat_id,
+        },
+        cookies=inst_cookie,
+    )
+    course_id = res.json()["id"]
+
+    # Add module & lesson and publish
+    mod_res = await client.post(
+        f"/api/v1/courses/{course_id}/modules",
+        json={"title": "K8s Architecture", "sort_order": 1},
+        cookies=inst_cookie,
+    )
+    mod_id = mod_res.json()["id"]
+
+    await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={"title": "Control Plane Pods", "sort_order": 1, "text_content": "API server, scheduler, controller manager."},
+        cookies=inst_cookie,
+    )
+
+    await client.post(f"/api/v1/courses/{course_id}/publish", cookies=inst_cookie)
+
+    # Student enrolls
+    enr_res = await client.post("/api/v1/enrollments", json={"course_id": course_id}, cookies=stud_cookie)
+    assert enr_res.status_code == 201
+
+    # Duplicate enrollment rejected safely
+    dup_res = await client.post("/api/v1/enrollments", json={"course_id": course_id}, cookies=stud_cookie)
+    assert dup_res.status_code == 409
+
+    # Instructor attempts to DELETE course -> 403 Forbidden
+    del_res = await client.post(f"/api/v1/courses/{course_id}/unpublish", cookies=inst_cookie)
+    del_attempt = await client.delete(f"/api/v1/courses/{course_id}", cookies=inst_cookie)
+    assert del_attempt.status_code == 403
+    assert "Cannot delete a course with active enrollments" in del_attempt.json()["error"]["message"]
+
+    # Instructor archives the course instead -> 200 OK
+    arch_res = await client.post(f"/api/v1/courses/{course_id}/archive", cookies=inst_cookie)
+    assert arch_res.status_code == 200
+
+    # Platform Super Admin retains force-deletion authority
+    super_del = await client.delete(f"/api/v1/courses/{course_id}", cookies=admin_cookie)
+    assert super_del.status_code == 204
+
+
+# ==============================================================================
+# 7. Safe HTML Sanitization (XSS Prevention)
+# ==============================================================================
+
+
+@pytest.mark.asyncio
+async def test_html_sanitization_on_course_and_lessons(
+    client: AsyncClient, db_session: AsyncSession
+):
+    await create_user(db_session, "inst.xss@learnova.ai", SystemRole.INSTRUCTOR.value)
+    await create_user(db_session, "admin.xss@learnova.ai", SystemRole.SUPER_ADMIN.value)
+    inst_cookie = await get_auth_cookie(client, "inst.xss@learnova.ai")
+    admin_cookie = await get_auth_cookie(client, "admin.xss@learnova.ai")
+
+    cat_res = await client.post(
+        "/api/v1/course-categories",
+        json={"name": "Cybersecurity"},
+        cookies=admin_cookie,
+    )
+    cat_id = cat_res.json()["id"]
+
+    # Create course with malicious script and event handlers
+    xss_desc = "<p>Legitimate overview.</p><script>alert('xss')</script><img src='x' onerror='stealCookie()'>"
+    xss_short = "Safe intro <b onclick='hack()'>bold</b>"
+
+    course_res = await client.post(
+        "/api/v1/courses",
+        json={
+            "title": "Application Security",
+            "short_description": xss_short,
+            "description": xss_desc,
+            "category_id": cat_id,
+        },
+        cookies=inst_cookie,
+    )
+    assert course_res.status_code == 201
+    course_data = course_res.json()
+    course_id = course_data["id"]
+
+    # Script tag stripped, onerror attribute stripped, legitimate p/b preserved
+    assert "<script>" not in course_data["description"]
+    assert "onerror" not in course_data["description"]
+    assert "<p>Legitimate overview.</p>" in course_data["description"]
+    assert "onclick" not in course_data["short_description"]
+    assert "<b>bold</b>" in course_data["short_description"]
+
+    # Module and lesson with malicious HTML & JavaScript scheme
+    mod_res = await client.post(
+        f"/api/v1/courses/{course_id}/modules",
+        json={"title": "Injection Attacks", "sort_order": 1},
+        cookies=inst_cookie,
+    )
+    mod_id = mod_res.json()["id"]
+
+    xss_lesson_body = (
+        "<h2>SQL Injection</h2>"
+        "<a href=\"javascript:alert('malicious')\">Click here</a>"
+        "<iframe src=\"http://attacker.com\"></iframe>"
+        "<pre><code>SELECT * FROM users;</code></pre>"
+    )
+
+    les_res = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Lesson 1: SQLi",
+            "sort_order": 1,
+            "text_content": xss_lesson_body,
+        },
+        cookies=inst_cookie,
+    )
+    assert les_res.status_code == 201
+    les_data = les_res.json()
+
+    assert "<iframe" not in les_data["text_content"]
+    assert "javascript:" not in les_data["text_content"]
+    assert "<h2>SQL Injection</h2>" in les_data["text_content"]
+    assert "<pre><code>SELECT * FROM users;</code></pre>" in les_data["text_content"]
+
+
+# ==============================================================================
+# 8. Multimedia Lessons & Downloadable Resource Validation
+# ==============================================================================
+
+
+@pytest.mark.asyncio
+async def test_multimedia_lesson_and_resource_validation(
+    client: AsyncClient, db_session: AsyncSession
+):
+    await create_user(db_session, "inst.media@learnova.ai", SystemRole.INSTRUCTOR.value)
+    await create_user(db_session, "admin.media@learnova.ai", SystemRole.SUPER_ADMIN.value)
+    inst_cookie = await get_auth_cookie(client, "inst.media@learnova.ai")
+    admin_cookie = await get_auth_cookie(client, "admin.media@learnova.ai")
+
+    cat_res = await client.post(
+        "/api/v1/course-categories",
+        json={"name": "Data Science"},
+        cookies=admin_cookie,
+    )
+    cat_id = cat_res.json()["id"]
+
+    c_res = await client.post(
+        "/api/v1/courses",
+        json={
+            "title": "Deep Learning Fundamentals",
+            "short_description": "Neural networks and gradient descent",
+            "description": "Backpropagation, convolutions, attention mechanisms, and transformers.",
+            "category_id": cat_id,
+        },
+        cookies=inst_cookie,
+    )
+    course_id = c_res.json()["id"]
+
+    mod_res = await client.post(
+        f"/api/v1/courses/{course_id}/modules",
+        json={"title": "CNNs", "sort_order": 1},
+        cookies=inst_cookie,
+    )
+    mod_id = mod_res.json()["id"]
+
+    # 1. Valid YouTube Video URL -> Success
+    v1 = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Convolutional Layer Lecture",
+            "sort_order": 1,
+            "content_type": "video",
+            "resource_url": "https://www.youtube.com/watch?v=aircAruvnKk",
+            "duration_minutes": 25,
+        },
+        cookies=inst_cookie,
+    )
+    assert v1.status_code == 201
+
+    # 2. Invalid Video Scheme (ftp://) -> 422
+    v2 = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Insecure Video",
+            "sort_order": 2,
+            "content_type": "video",
+            "resource_url": "ftp://files.example.com/lecture.mp4",
+        },
+        cookies=inst_cookie,
+    )
+    assert v2.status_code == 422
+
+    # 3. Valid PDF resource URL -> Success
+    pdf1 = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Backprop Cheatsheet",
+            "sort_order": 3,
+            "content_type": "pdf",
+            "resource_url": "https://cdn.learnova.ai/docs/deep-learning.pdf",
+        },
+        cookies=inst_cookie,
+    )
+    assert pdf1.status_code == 201
+
+    # 4. Invalid PDF (non-pdf extension) -> 422
+    pdf2 = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Suspicious Executable",
+            "sort_order": 4,
+            "content_type": "pdf",
+            "resource_url": "https://cdn.learnova.ai/docs/trojan.exe",
+        },
+        cookies=inst_cookie,
+    )
+    assert pdf2.status_code == 422
+
+    # 5. Valid Downloadable Supplementary Resource in metadata -> Success
+    down1 = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "PyTorch Notebook",
+            "sort_order": 5,
+            "content_type": "text",
+            "text_content": "<p>Download the dataset below.</p>",
+            "metadata_json": {
+                "downloadable_resources": [
+                    {
+                        "name": "cifar10_dataset.zip",
+                        "url": "https://storage.learnova.ai/datasets/cifar10.zip",
+                        "file_type": "zip",
+                        "size_bytes": 10 * 1024 * 1024,
+                    }
+                ]
+            },
+        },
+        cookies=inst_cookie,
+    )
+    assert down1.status_code == 201
+
+    # 6. Disallowed Downloadable File Type (.bat) -> 422
+    down2 = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Bad Script",
+            "sort_order": 6,
+            "content_type": "text",
+            "text_content": "<p>Do not run this.</p>",
+            "metadata_json": {
+                "downloadable_resources": [
+                    {
+                        "name": "install.bat",
+                        "url": "https://storage.learnova.ai/files/install.bat",
+                        "file_type": "bat",
+                        "size_bytes": 512,
+                    }
+                ]
+            },
+        },
+        cookies=inst_cookie,
+    )
+    assert down2.status_code == 422
+
+
+# ==============================================================================
+# 9. Lesson Detail Endpoint & Enrollment Validation
+# ==============================================================================
+
+
+@pytest.mark.asyncio
+async def test_lesson_detail_endpoint_preview_and_access(
+    client: AsyncClient, db_session: AsyncSession
+):
+    await create_user(db_session, "inst.less@learnova.ai", SystemRole.INSTRUCTOR.value)
+    await create_user(db_session, "stud.enrolled@learnova.ai", SystemRole.STUDENT.value)
+    await create_user(db_session, "stud.outsider@learnova.ai", SystemRole.STUDENT.value)
+    await create_user(db_session, "admin.less@learnova.ai", SystemRole.SUPER_ADMIN.value)
+
+    inst_cookie = await get_auth_cookie(client, "inst.less@learnova.ai")
+    enrolled_cookie = await get_auth_cookie(client, "stud.enrolled@learnova.ai")
+    outsider_cookie = await get_auth_cookie(client, "stud.outsider@learnova.ai")
+    admin_cookie = await get_auth_cookie(client, "admin.less@learnova.ai")
+
+    cat_res = await client.post(
+        "/api/v1/course-categories",
+        json={"name": "Computer Architecture"},
+        cookies=admin_cookie,
+    )
+    cat_id = cat_res.json()["id"]
+
+    c_res = await client.post(
+        "/api/v1/courses",
+        json={
+            "title": "RISC-V Microarchitecture",
+            "short_description": "Pipelining, hazard detection, and branch prediction",
+            "description": "Design an in-order five-stage pipelined processor with forwarding and stall units.",
+            "category_id": cat_id,
+        },
+        cookies=inst_cookie,
+    )
+    course_id = c_res.json()["id"]
+
+    mod_res = await client.post(
+        f"/api/v1/courses/{course_id}/modules",
+        json={"title": "Pipelines", "sort_order": 1},
+        cookies=inst_cookie,
+    )
+    mod_id = mod_res.json()["id"]
+
+    # Preview Lesson
+    prev_les = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Preview: Instruction Sets",
+            "sort_order": 1,
+            "text_content": "<p>Publicly viewable lesson content</p>",
+            "is_preview": True,
+        },
+        cookies=inst_cookie,
+    )
+    prev_id = prev_les.json()["id"]
+
+    # Non-preview Lesson
+    locked_les = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Private: Forwarding Logic",
+            "sort_order": 2,
+            "text_content": "<p>Restricted enrolled student lesson</p>",
+            "is_preview": False,
+        },
+        cookies=inst_cookie,
+    )
+    locked_id = locked_les.json()["id"]
+
+    # A) While course is DRAFT:
+    # Instructor can view locked lesson -> 200
+    inst_v = await client.get(f"/api/v1/lessons/{locked_id}", cookies=inst_cookie)
+    assert inst_v.status_code == 200
+
+    # Student cannot view draft lesson -> 403
+    stud_draft = await client.get(f"/api/v1/lessons/{locked_id}", cookies=enrolled_cookie)
+    assert stud_draft.status_code == 403
+
+    # Anonymous cannot view draft lesson -> 403
+    client.cookies.clear()
+    anon_draft = await client.get(f"/api/v1/lessons/{locked_id}")
+    assert anon_draft.status_code == 403
+
+    # B) Publish Course:
+    await client.post(f"/api/v1/courses/{course_id}/publish", cookies=inst_cookie)
+
+    # Student 1 enrolls:
+    await client.post("/api/v1/enrollments", json={"course_id": course_id}, cookies=enrolled_cookie)
+
+    # Preview Lesson is accessible by anyone:
+    client.cookies.clear()
+    anon_prev = await client.get(f"/api/v1/lessons/{prev_id}")
+    assert anon_prev.status_code == 200
+    assert anon_prev.json()["id"] == prev_id
+
+    out_prev = await client.get(f"/api/v1/lessons/{prev_id}", cookies=outsider_cookie)
+    assert out_prev.status_code == 200
+
+    # Non-preview Lesson:
+    # Anonymous -> 403
+    client.cookies.clear()
+    anon_locked = await client.get(f"/api/v1/lessons/{locked_id}")
+    assert anon_locked.status_code == 403
+
+    # Outsider student (not enrolled) -> 403
+    out_locked = await client.get(f"/api/v1/lessons/{locked_id}", cookies=outsider_cookie)
+    assert out_locked.status_code == 403
+
+    # Enrolled student -> 200 OK
+    enrolled_view = await client.get(f"/api/v1/lessons/{locked_id}", cookies=enrolled_cookie)
+    assert enrolled_view.status_code == 200
+    assert "Restricted enrolled student lesson" in enrolled_view.json()["text_content"]
+
+

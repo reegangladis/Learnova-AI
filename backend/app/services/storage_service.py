@@ -36,6 +36,10 @@ class ReferenceStorageService(BaseStorageProvider):
     """
 
     ALLOWED_SCHEMES: ClassVar[set[str]] = {"http", "https", "s3", "storage", "ipfs"}
+    ALLOWED_ATTACHMENT_TYPES: ClassVar[set[str]] = {
+        "pdf", "zip", "csv", "json", "py", "txt", "ipynb", "docx", "pptx", "png", "jpg", "md"
+    }
+    MAX_ATTACHMENT_BYTES: ClassVar[int] = 104_857_600  # 100 MB
 
     def validate_reference(
         self, resource_url: str, content_type: LessonContentType | str
@@ -47,12 +51,74 @@ class ReferenceStorageService(BaseStorageProvider):
         if not stripped:
             return False
 
-        parsed = urlparse(stripped)
-        if parsed.scheme.lower() not in self.ALLOWED_SCHEMES:
+        try:
+            parsed = urlparse(stripped)
+        except Exception:
             return False
 
-        return bool(parsed.netloc or parsed.path)
+        scheme = parsed.scheme.lower()
+        if scheme not in self.ALLOWED_SCHEMES:
+            return False
 
+        if not (parsed.netloc or parsed.path):
+            return False
+
+        c_type = (
+            content_type.value
+            if isinstance(content_type, LessonContentType)
+            else str(content_type).lower()
+        )
+
+        if c_type == LessonContentType.VIDEO.value:
+            # Video references: must have valid netloc if http/https, or valid path for storage
+            if scheme in {"http", "https"} and not parsed.netloc:
+                return False
+
+        elif c_type == LessonContentType.PDF.value:
+            # PDF references: if extension is provided in path, verify it's pdf
+            path_lower = parsed.path.lower()
+            if "." in path_lower and not path_lower.endswith(".pdf") and "?" not in stripped:
+                # If there's an explicit non-pdf extension in path without query parameters, reject
+                ext = path_lower.rsplit(".", 1)[-1]
+                if ext in {"exe", "bat", "sh", "bin", "mp4", "zip"}:
+                    return False
+
+        elif c_type == LessonContentType.EXTERNAL_RESOURCE.value:
+            if scheme in {"http", "https"} and not parsed.netloc:
+                return False
+
+        return True
+
+    def validate_downloadable_resource(
+        self, resource: dict[str, Any]
+    ) -> tuple[bool, str | None]:
+        """Validates a downloadable attachment dictionary structure and size."""
+        if not isinstance(resource, dict):
+            return False, "Downloadable resource must be an object."
+
+        title = resource.get("title") or resource.get("name")
+        if not title or not isinstance(title, str) or not title.strip():
+            return False, "Resource title is required."
+
+        url = resource.get("url")
+        if not url or not isinstance(url, str):
+            return False, "Resource URL is required."
+
+        if not self.validate_reference(url, LessonContentType.EXTERNAL_RESOURCE):
+            return False, "Resource URL reference is invalid or uses an unsupported protocol."
+
+        file_type = str(resource.get("file_type", "")).lower().lstrip(".")
+        if file_type and file_type not in self.ALLOWED_ATTACHMENT_TYPES:
+            return False, f"File type '{file_type}' is not supported for downloads."
+
+        size_bytes = resource.get("size_bytes")
+        if size_bytes is not None:
+            if not isinstance(size_bytes, int) or size_bytes < 0:
+                return False, "Resource size_bytes must be a non-negative integer."
+            if size_bytes > self.MAX_ATTACHMENT_BYTES:
+                return False, f"Resource exceeds maximum allowed size of {self.MAX_ATTACHMENT_BYTES // (1024 * 1024)}MB."
+
+        return True, None
 
     async def get_presigned_upload_url(
         self, file_name: str, content_type: str, expires_in: int = 3600

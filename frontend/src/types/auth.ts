@@ -39,6 +39,8 @@ export interface AuthResponse {
   success: boolean;
   user?: User;
   message?: string;
+  access_token?: string;
+  token_type?: string;
   error?: APIErrorDetails;
 }
 
