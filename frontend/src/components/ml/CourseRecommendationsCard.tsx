@@ -2,13 +2,15 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  BookOpen,
-  Clock,
-  Sparkles,
-  TrendingUp,
   AlertCircle,
   ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Clock,
   Compass,
+  Sparkles,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -30,6 +32,20 @@ export const CourseRecommendationsCard: React.FC<CourseRecommendationsCardProps>
 
   const getStrategyBadge = (strategy: string) => {
     switch (strategy) {
+      case "skill_gap_remediation":
+        return (
+          <Badge variant="default" className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs gap-1">
+            <Target className="h-3 w-3" />
+            <span>Skill Gap Remediation</span>
+          </Badge>
+        );
+      case "goal_alignment":
+        return (
+          <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs gap-1">
+            <CheckCircle2 className="h-3 w-3" />
+            <span>Goal Alignment</span>
+          </Badge>
+        );
       case "content_based":
         return (
           <Badge variant="default" className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 text-xs gap-1">

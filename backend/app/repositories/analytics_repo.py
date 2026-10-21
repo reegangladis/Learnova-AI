@@ -407,9 +407,20 @@ class AnalyticsRepository:
     # ========================================================================
 
     async def get_instructor_overview_stats(
-        self, instructor_id: uuid.UUID, days: int = 30
+        self,
+        instructor_id: uuid.UUID,
+        course_id: uuid.UUID | None = None,
+        organization_id: uuid.UUID | None = None,
+        days: int = 30,
     ) -> dict:
-        """Calculates comprehensive instructor overview metrics strictly isolated to their own courses."""
+        """Calculates comprehensive instructor overview metrics strictly isolated to their own courses,
+        with optional course_id and organization_id filtering."""
+        c_filters = [Course.instructor_id == instructor_id]
+        if course_id:
+            c_filters.append(Course.id == course_id)
+        if organization_id:
+            c_filters.append(Course.organization_id == organization_id)
+
         # 1. Course counts
         courses_stmt = (
             select(
@@ -418,10 +429,15 @@ class AnalyticsRepository:
                 func.count(case((Course.status == CourseStatus.DRAFT.value, 1))).label("draft"),
                 func.count(case((Course.status == CourseStatus.ARCHIVED.value, 1))).label("archived"),
             )
-            .where(Course.instructor_id == instructor_id)
+            .where(*c_filters)
         )
         courses_res = await self.db.execute(courses_stmt)
         c_row = courses_res.one()
+
+        # Scoped subquery for courses
+        instructor_course_subq = (
+            select(Course.id).where(*c_filters).scalar_subquery()
+        )
 
         # 2. Enrollments across instructor's courses
         enr_stmt = (
@@ -432,8 +448,7 @@ class AnalyticsRepository:
                 func.count(case((Enrollment.status == EnrollmentStatus.DROPPED.value, 1))).label("dropped"),
                 func.count(distinct(Enrollment.user_id)).label("unique_students"),
             )
-            .join(Course, Enrollment.course_id == Course.id)
-            .where(Course.instructor_id == instructor_id)
+            .where(Enrollment.course_id.in_(instructor_course_subq))
         )
         enr_res = await self.db.execute(enr_stmt)
         e_row = enr_res.one()
@@ -442,10 +457,7 @@ class AnalyticsRepository:
         completed_enr = e_row.completed or 0
         completion_rate = (completed_enr / total_enr * 100.0) if total_enr > 0 else 0.0
 
-        # 3. Lessons and lesson completions
-        instructor_course_subq = (
-            select(Course.id).where(Course.instructor_id == instructor_id).scalar_subquery()
-        )
+        # 3. Lessons and lesson completions (distinct progress IDs prevents duplicates)
         total_lessons_stmt = (
             select(func.count(Lesson.id))
             .join(CourseModule, Lesson.module_id == CourseModule.id)
@@ -454,7 +466,7 @@ class AnalyticsRepository:
         total_lessons = (await self.db.execute(total_lessons_stmt)).scalar_one() or 0
 
         total_completions_stmt = (
-            select(func.count(LessonProgress.id))
+            select(func.count(distinct(LessonProgress.id)))
             .where(
                 LessonProgress.course_id.in_(instructor_course_subq),
                 LessonProgress.is_completed.is_(True),
@@ -473,12 +485,7 @@ class AnalyticsRepository:
         # 4. Quizzes and Attempts
         quizzes_stmt = (
             select(func.count(Quiz.id))
-            .where(
-                or_(
-                    Quiz.instructor_id == instructor_id,
-                    Quiz.course_id.in_(instructor_course_subq),
-                )
-            )
+            .where(Quiz.course_id.in_(instructor_course_subq))
         )
         total_quizzes = (await self.db.execute(quizzes_stmt)).scalar_one() or 0
 
@@ -490,10 +497,7 @@ class AnalyticsRepository:
             )
             .join(Quiz, QuizAttempt.quiz_id == Quiz.id)
             .where(
-                or_(
-                    Quiz.instructor_id == instructor_id,
-                    Quiz.course_id.in_(instructor_course_subq),
-                ),
+                Quiz.course_id.in_(instructor_course_subq),
                 QuizAttempt.status == AttemptStatus.COMPLETED.value,
             )
         )
@@ -513,9 +517,8 @@ class AnalyticsRepository:
                 func.date(Enrollment.enrolled_at).label("day"),
                 func.count(Enrollment.id).label("count"),
             )
-            .join(Course, Enrollment.course_id == Course.id)
             .where(
-                Course.instructor_id == instructor_id,
+                Enrollment.course_id.in_(instructor_course_subq),
                 Enrollment.enrolled_at >= start_date,
             )
             .group_by(func.date(Enrollment.enrolled_at))
@@ -528,9 +531,8 @@ class AnalyticsRepository:
                 func.date(Enrollment.completed_at).label("day"),
                 func.count(Enrollment.id).label("count"),
             )
-            .join(Course, Enrollment.course_id == Course.id)
             .where(
-                Course.instructor_id == instructor_id,
+                Enrollment.course_id.in_(instructor_course_subq),
                 Enrollment.status == EnrollmentStatus.COMPLETED.value,
                 Enrollment.completed_at.is_not(None),
                 Enrollment.completed_at >= start_date,
@@ -547,10 +549,7 @@ class AnalyticsRepository:
             )
             .join(Quiz, QuizAttempt.quiz_id == Quiz.id)
             .where(
-                or_(
-                    Quiz.instructor_id == instructor_id,
-                    Quiz.course_id.in_(instructor_course_subq),
-                ),
+                Quiz.course_id.in_(instructor_course_subq),
                 QuizAttempt.status == AttemptStatus.COMPLETED.value,
                 QuizAttempt.submitted_at >= start_date,
             )
@@ -589,17 +588,22 @@ class AnalyticsRepository:
             "average_quiz_score": round(avg_score, 2),
             "quiz_pass_rate": round(pass_rate, 2),
             "trends": trends,
+            "course_id": course_id,
+            "organization_id": organization_id,
         }
 
     async def get_instructor_course_comparisons(
         self,
         instructor_id: uuid.UUID,
+        organization_id: uuid.UUID | None = None,
         page: int = 1,
         page_size: int = 20,
         search: str | None = None,
     ) -> tuple[list[dict], int]:
         """Provides per-course analytics comparison for courses owned by the instructor."""
         filters = [Course.instructor_id == instructor_id]
+        if organization_id:
+            filters.append(Course.organization_id == organization_id)
         if search:
             filters.append(Course.title.ilike(f"%{search.strip()}%"))
 

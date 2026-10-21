@@ -29,6 +29,8 @@ class StudentProfile(BaseModel):
     completed_course_titles: list[str] = Field(default_factory=list, description="Titles of completed courses")
     recent_quiz_scores: list[float] = Field(default_factory=list, description="Recent quiz percentages")
     preferred_difficulty: str | None = Field(default=None, description="Inferred or declared difficulty preference")
+    learning_goals: list[str] = Field(default_factory=list, description="Declared student learning goals or focus topics")
+    skill_gaps: list[str] = Field(default_factory=list, description="Topics identified with assessment skill gaps")
 
 
 class RecommendationRequest(BaseModel):

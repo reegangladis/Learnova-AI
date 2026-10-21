@@ -11,6 +11,8 @@ class AIChatRequest(BaseModel):
     course_id: uuid.UUID | None = Field(None, description="Optional active course ID")
     lesson_id: uuid.UUID | None = Field(None, description="Optional active lesson ID")
     conversation_id: uuid.UUID | None = Field(None, description="Optional conversation session ID")
+    top_k: int | None = Field(4, ge=1, le=20, description="Configurable maximum retrieved passages")
+    relevance_threshold: float | None = Field(0.20, ge=0.0, le=1.0, description="Minimum similarity score")
 
 
 class SourceCitation(BaseModel):
@@ -20,6 +22,8 @@ class SourceCitation(BaseModel):
     lesson_id: str = Field(..., description="Source lesson ID")
     lesson_title: str = Field(..., description="Title of the cited lesson")
     module_title: str | None = Field(None, description="Parent module title")
+    document_title: str | None = Field(None, description="Title of cited document if applicable")
+    page_number: int | None = Field(None, description="Page number for document/PDF citations")
     similarity_score: float = Field(..., description="Cosine similarity score")
     snippet: str = Field(..., description="Excerpt of the retrieved content")
 
@@ -114,3 +118,27 @@ class LessonIngestionResponse(BaseModel):
     status: str
     chunks_count: int
     content_hash: str | None = None
+
+
+class DocumentIngestionRequest(BaseModel):
+    """Payload to ingest a raw text or markdown document into course RAG index."""
+
+    title: str = Field(..., min_length=1, max_length=255, description="Document title")
+    content: str = Field(..., min_length=1, description="Raw text or markdown content")
+    file_type: str = Field("text", description="Document type: text, markdown, or pdf")
+    lesson_id: uuid.UUID | None = Field(None, description="Optional associated lesson ID")
+
+
+class DocumentIngestionResponse(BaseModel):
+    """Result of document parsing, chunking, and embedding."""
+
+    course_id: uuid.UUID
+    lesson_id: uuid.UUID | None = None
+    document_title: str
+    file_name: str
+    status: str
+    total_pages: int
+    chunks_count: int
+    content_hash: str
+    job_id: uuid.UUID
+

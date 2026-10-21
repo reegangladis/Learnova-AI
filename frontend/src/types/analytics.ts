@@ -125,6 +125,8 @@ export interface InstructorOverview {
   average_quiz_score: number;
   quiz_pass_rate: number;
   trends: InstructorTrend[];
+  course_id?: string | null;
+  organization_id?: string | null;
 }
 
 export interface InstructorCourseComparison {

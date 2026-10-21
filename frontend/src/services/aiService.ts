@@ -57,4 +57,33 @@ export const aiService = {
   async triggerLessonIngestion(lessonId: string): Promise<IngestionJobResponse> {
     return apiClient.post<IngestionJobResponse>(`/ai/ingestion/lessons/${lessonId}`);
   },
+
+  /**
+   * Ingest raw text or markdown document into course RAG index.
+   */
+  async ingestDocumentText(
+    courseId: string,
+    payload: { title: string; content: string; file_type?: string; lesson_id?: string }
+  ): Promise<IngestionJobResponse> {
+    return apiClient.post<IngestionJobResponse>(`/ai/ingestion/courses/${courseId}/documents`, payload);
+  },
+
+  /**
+   * Upload and ingest PDF or text document into course RAG index.
+   */
+  async uploadDocument(
+    courseId: string,
+    file: File,
+    lessonId?: string,
+    title?: string
+  ): Promise<IngestionJobResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (lessonId) formData.append("lesson_id", lessonId);
+    if (title) formData.append("title", title);
+    return apiClient.post<IngestionJobResponse>(`/ai/ingestion/courses/${courseId}/upload`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
+

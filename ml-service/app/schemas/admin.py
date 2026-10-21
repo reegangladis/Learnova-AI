@@ -20,6 +20,7 @@ class ModelVersionInfo(BaseModel):
     version: str
     framework: str
     status: str
+    provenance: str = Field(default="synthetic_educational_benchmark", description="Provenance of training data")
     trained_at: datetime
     metrics: ModelEvaluationMetrics | None = None
     features: list[str] = Field(default_factory=list)
@@ -42,7 +43,9 @@ class TrainModelResponse(BaseModel):
     success: bool
     model_name: str
     version: str
+    status: str = Field(default="experimental", description="Model deployment status")
     metrics: ModelEvaluationMetrics
     training_samples: int
     test_samples: int
+    provenance: str = Field(default="synthetic_educational_benchmark", description="Training dataset provenance")
     message: str

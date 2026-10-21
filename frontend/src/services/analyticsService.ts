@@ -47,9 +47,17 @@ export const analyticsService = {
   // Instructor Analytics
   // ==========================================================================
 
-  async getInstructorOverview(days = 30): Promise<InstructorOverview> {
+  async getInstructorOverview(
+    days = 30,
+    courseId?: string,
+    organizationId?: string
+  ): Promise<InstructorOverview> {
     return apiClient.get<InstructorOverview>("/analytics/instructor/overview", {
-      params: { days },
+      params: {
+        days,
+        course_id: courseId || undefined,
+        organization_id: organizationId || undefined,
+      },
     });
   },
 

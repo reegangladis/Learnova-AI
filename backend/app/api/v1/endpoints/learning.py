@@ -10,6 +10,8 @@ from backend.app.api.deps import (
 )
 from backend.app.models.user import User
 from backend.app.schemas.learning import (
+    BatchProgressSyncRequest,
+    BatchProgressSyncResponse,
     CourseProgressResponse,
     LearningCourseResponse,
     LessonProgressResponse,
@@ -77,7 +79,7 @@ async def resume_course(
 @router.put(
     "/lessons/{lesson_id}/progress",
     response_model=LessonProgressResponse,
-    summary="Update lesson completion state idempotently",
+    summary="Update lesson completion and video playback state idempotently",
 )
 async def update_lesson_progress(
     lesson_id: uuid.UUID,
@@ -85,11 +87,31 @@ async def update_lesson_progress(
     current_user: Annotated[User, Depends(get_current_user)],
     learning_service: Annotated[LearningService, Depends(get_learning_service)],
 ) -> LessonProgressResponse:
-    """Marks a lesson as complete or incomplete idempotently and recalculates course progress."""
+    """Marks a lesson as complete or updates video playback position idempotently."""
     return await learning_service.update_lesson_progress(
         current_user=current_user,
         lesson_id=lesson_id,
         is_completed=data.is_completed,
+        playback_position_seconds=data.playback_position_seconds,
+        playback_duration_seconds=data.playback_duration_seconds,
+    )
+
+
+@router.post(
+    "/progress/sync",
+    response_model=BatchProgressSyncResponse,
+    summary="Synchronize offline lesson progress updates in batch",
+)
+async def sync_offline_progress(
+    data: BatchProgressSyncRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    learning_service: Annotated[LearningService, Depends(get_learning_service)],
+) -> BatchProgressSyncResponse:
+    """Processes an offline queue of progress updates idempotently."""
+    return await learning_service.sync_offline_progress(
+        current_user=current_user,
+        course_id=data.course_id,
+        updates=data.updates,
     )
 
 

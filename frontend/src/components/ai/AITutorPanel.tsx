@@ -422,7 +422,9 @@ export const AITutorPanel: React.FC<AITutorPanelProps> = ({
                         >
                           <BookOpen className="h-2.5 w-2.5 text-primary" />
                           <span className="font-medium text-foreground">
-                            {cite.lesson_title || "Course Lesson"}
+                            {cite.document_title
+                              ? `${cite.document_title}${cite.page_number ? ` (p. ${cite.page_number})` : ""}`
+                              : (cite.lesson_title || "Course Lesson")}
                           </span>
                           {cite.similarity_score !== undefined && (
                             <span className="opacity-60 text-[9px]">

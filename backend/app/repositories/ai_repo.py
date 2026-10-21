@@ -180,6 +180,31 @@ class AIRepository:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_chunks_by_document_hash(
+        self, course_id: uuid.UUID, content_hash: str
+    ) -> list[DocumentChunk]:
+        stmt = select(DocumentChunk).where(
+            DocumentChunk.course_id == course_id,
+            DocumentChunk.content_hash == content_hash,
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def delete_chunks_for_document(
+        self, course_id: uuid.UUID, document_title: str
+    ) -> int:
+        chunks = await self.get_chunks_for_course(course_id=course_id)
+        to_delete = [
+            c for c in chunks
+            if c.metadata_json.get("document_title") == document_title
+        ]
+        if to_delete:
+            for c in to_delete:
+                await self.db.delete(c)
+            await self.db.flush()
+            return len(to_delete)
+        return 0
+
     async def count_chunks_for_course(self, course_id: uuid.UUID) -> int:
         stmt = select(func.count(DocumentChunk.id)).where(
             DocumentChunk.course_id == course_id

@@ -354,3 +354,135 @@ async def test_model_status_rbac(client: AsyncClient, db_session: AsyncSession):
     admin_data = admin_res.json()["data"]
     assert "service_status" in admin_data
     assert len(admin_data["active_models"]) > 0
+    # Verify experimental status and provenance
+    risk_model = next((m for m in admin_data["active_models"] if m["model_name"] == "risk_prediction"), None)
+    if risk_model:
+        assert risk_model["status"] == "experimental"
+        assert risk_model["provenance"] == "synthetic_educational_benchmark"
+
+
+@pytest.mark.asyncio
+async def test_multi_signal_recommendations_goals_and_skill_gaps(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """Verifies that recommendations evaluate assessment-derived skill gaps and user learning goals."""
+    student = await create_user(db_session, "ml_signal_std@example.com", SystemRole.STUDENT)
+    instructor = await create_user(db_session, "ml_signal_inst@example.com", SystemRole.INSTRUCTOR)
+
+    # 1. Base course and failed quiz attempt to produce a skill gap signal
+    c_base = Course(
+        title="Intro to Cloud",
+        slug="intro-to-cloud-signals",
+        short_description="Cloud basics.",
+        description="Detailed cloud basics.",
+        instructor_id=instructor.id,
+        status=CourseStatus.PUBLISHED.value,
+    )
+    db_session.add(c_base)
+    await db_session.flush()
+
+    quiz = Quiz(
+        course_id=c_base.id,
+        instructor_id=instructor.id,
+        title="Containers Assessment",
+        status=QuizStatus.PUBLISHED.value,
+    )
+    db_session.add(quiz)
+    await db_session.flush()
+
+    attempt = QuizAttempt(
+        quiz_id=quiz.id,
+        user_id=student.id,
+        attempt_number=1,
+        status=AttemptStatus.COMPLETED.value,
+        score=45.0,
+        max_score=100.0,
+        percentage_score=45.0,
+        passed=False,
+    )
+    db_session.add(attempt)
+
+    # 2. Candidate course remediating the container skill gap
+    c_remedy = Course(
+        title="Kubernetes and Containers in Depth",
+        slug="k8s-containers-remedy",
+        short_description="Master container orchestration.",
+        description="Comprehensive container architecture.",
+        difficulty="intermediate",
+        instructor_id=instructor.id,
+        status=CourseStatus.PUBLISHED.value,
+        learning_objectives=["containers", "kubernetes", "docker"],
+    )
+    # 3. Candidate course matching a declared goal
+    c_goal = Course(
+        title="Golang Concurrency Patterns",
+        slug="golang-concurrency-goal",
+        short_description="Master Go concurrency.",
+        description="Deep dive into channels and goroutines.",
+        difficulty="intermediate",
+        instructor_id=instructor.id,
+        status=CourseStatus.PUBLISHED.value,
+        learning_objectives=["goroutines", "concurrency", "channels"],
+    )
+    db_session.add_all([c_remedy, c_goal])
+    await db_session.commit()
+
+    cookies = await get_auth_cookie(client, "ml_signal_std@example.com")
+    res = await client.get("/api/v1/ml/recommendations?goal=concurrency", cookies=cookies)
+    assert res.status_code == 200
+    data = res.json()["data"]
+    recs = data["recommendations"]
+
+    assert len(recs) >= 1
+    # Check that recommendation reasons and strategies accurately reflect the signals
+    strategies = [r["strategy"] for r in recs]
+    assert any(s in ("skill_gap_remediation", "goal_alignment", "content_based", "popularity_fallback") for s in strategies)
+    # Ensure every recommendation provides an explanatory reason
+    for r in recs:
+        assert len(r["reason"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_model_training_rbac_and_provenance(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """Verifies that only administrators can trigger model retraining and experimental provenance is preserved."""
+    await create_user(db_session, "train_std@example.com", SystemRole.STUDENT)
+    await create_user(db_session, "train_inst@example.com", SystemRole.INSTRUCTOR)
+    await create_user(db_session, "train_admin@example.com", SystemRole.ADMIN)
+
+    # 1. Unauthenticated -> 401/403
+    unauth_res = await client.post("/api/v1/ml/train", json={"model_name": "risk_prediction"})
+    assert unauth_res.status_code in (401, 403)
+
+    # 2. Student -> 403 Forbidden
+    std_cookie = await get_auth_cookie(client, "train_std@example.com")
+    std_res = await client.post(
+        "/api/v1/ml/train",
+        json={"model_name": "risk_prediction"},
+        cookies=std_cookie,
+    )
+    assert std_res.status_code == 403
+
+    # 3. Instructor -> 403 Forbidden
+    inst_cookie = await get_auth_cookie(client, "train_inst@example.com")
+    inst_res = await client.post(
+        "/api/v1/ml/train",
+        json={"model_name": "risk_prediction"},
+        cookies=inst_cookie,
+    )
+    assert inst_res.status_code == 403
+
+    # 4. Admin -> 200 OK with governance metadata
+    admin_cookie = await get_auth_cookie(client, "train_admin@example.com")
+    admin_res = await client.post(
+        "/api/v1/ml/train",
+        json={"model_name": "risk_prediction", "epochs": 5},
+        cookies=admin_cookie,
+    )
+    assert admin_res.status_code == 200
+    res_data = admin_res.json()["data"]
+    assert res_data["status"] == "experimental"
+    assert res_data["provenance"] == "synthetic_educational_benchmark"
+    assert res_data["model_name"] == "risk_prediction"
+

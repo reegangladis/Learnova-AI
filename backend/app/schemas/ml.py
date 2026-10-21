@@ -112,6 +112,7 @@ class ModelVersionInfoDTO(BaseModel):
     version: str
     framework: str
     status: str
+    provenance: str = Field(default="synthetic_educational_benchmark", description="Training dataset origin and provenance")
     trained_at: datetime
     metrics: ModelEvaluationMetricsDTO | None = None
     features: list[str] = Field(default_factory=list)
@@ -134,8 +135,10 @@ class TrainModelResponseDTO(BaseModel):
     success: bool
     model_name: str
     version: str
+    status: str = Field(default="experimental", description="Model production readiness status")
     metrics: ModelEvaluationMetricsDTO
     training_samples: int
     test_samples: int
+    provenance: str = Field(default="synthetic_educational_benchmark", description="Training dataset provenance")
     message: str
 

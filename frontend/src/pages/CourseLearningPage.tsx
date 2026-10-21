@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen,
@@ -7,6 +7,7 @@ import {
   Circle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ArrowLeft,
   Video,
   FileText,
@@ -17,23 +18,103 @@ import {
   Menu,
   X,
   HelpCircle,
+  WifiOff,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { learningService } from "@/services/learningService";
 import { quizService } from "@/services/quizService";
+import {
+  enqueueProgress,
+  getPendingForCourse,
+  dequeueCourseItems,
+  subscribeToQueue,
+} from "@/services/offlineQueue";
 import { AITutorPanel } from "@/components/ai/AITutorPanel";
+import { VideoLessonPlayer } from "@/components/learning/VideoLessonPlayer";
 import { LearningLesson } from "@/types/learning";
 import { StudentCourseQuizItem } from "@/types/quiz";
 
 export function CourseLearningPage() {
   const { courseId } = useParams<{ courseId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(
+    searchParams.get("lessonId")
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aiTutorOpen, setAiTutorOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
+
+  // Offline queue count
+  const [pendingOfflineCount, setPendingOfflineCount] = useState<number>(() =>
+    courseId ? getPendingForCourse(courseId).length : 0
+  );
+
+  // Monitor online / offline network state
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    const unsubscribe = subscribeToQueue(() => {
+      if (courseId) {
+        setPendingOfflineCount(getPendingForCourse(courseId).length);
+      }
+    });
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      unsubscribe();
+    };
+  }, [courseId]);
+
+  // Sync offline queue when coming back online
+  const syncOfflineUpdates = useCallback(async () => {
+    if (!courseId || !isOnline || isSyncing) return;
+    const pending = getPendingForCourse(courseId);
+    if (pending.length === 0) return;
+
+    setIsSyncing(true);
+    try {
+      const updates = pending.map((p) => ({
+        lesson_id: p.lessonId,
+        is_completed: p.isCompleted,
+        playback_position_seconds: p.playbackPositionSeconds,
+        playback_duration_seconds: p.playbackDurationSeconds,
+        client_timestamp: p.queuedAt,
+      }));
+
+      await learningService.syncOfflineProgress(courseId, updates);
+      dequeueCourseItems(courseId);
+      setPendingOfflineCount(0);
+      queryClient.invalidateQueries({ queryKey: ["learning-course", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
+    } catch {
+      // Retain items in queue on sync failure
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [courseId, isOnline, isSyncing, queryClient]);
+
+  useEffect(() => {
+    if (isOnline && pendingOfflineCount > 0) {
+      const timer = setTimeout(() => {
+        void syncOfflineUpdates();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOnline, pendingOfflineCount, syncOfflineUpdates]);
 
   // Fetch course learning syllabus & progress
   const {
@@ -55,37 +136,89 @@ export function CourseLearningPage() {
     enabled: !!courseId,
   });
 
-  // Flatten lessons in sequence across all modules
-  const allLessons: LearningLesson[] = React.useMemo(() => {
+  // Flatten lessons across modules
+  const allLessons: LearningLesson[] = useMemo(() => {
     if (!learningCourse?.modules) return [];
     return learningCourse.modules.flatMap((m) => m.lessons);
   }, [learningCourse]);
 
   // Purely derived active lesson without cascading setState in an effect
-  const activeLesson: LearningLesson | null = React.useMemo(() => {
+  const activeLesson: LearningLesson | null = useMemo(() => {
     if (allLessons.length === 0) return null;
     if (selectedLessonId) {
       const found = allLessons.find((l) => l.id === selectedLessonId);
       if (found) return found;
     }
+    const urlLessonId = searchParams.get("lessonId");
+    if (urlLessonId) {
+      const found = allLessons.find((l) => l.id === urlLessonId);
+      if (found) return found;
+    }
+    try {
+      if (courseId) {
+        const savedId = localStorage.getItem(`learnova_last_lesson_${courseId}`);
+        if (savedId) {
+          const found = allLessons.find((l) => l.id === savedId);
+          if (found) return found;
+        }
+      }
+    } catch {
+      // ignore
+    }
     const firstIncomplete = allLessons.find((l) => !l.is_completed);
     return firstIncomplete || allLessons[0];
-  }, [allLessons, selectedLessonId]);
+  }, [allLessons, selectedLessonId, searchParams, courseId]);
 
   const activeLessonIndex = activeLesson
     ? allLessons.findIndex((l) => l.id === activeLesson.id)
     : 0;
 
-  // Mutation to toggle lesson completion
+  const activeLessonId = activeLesson?.id;
+  // Persist active lesson in localStorage
+  useEffect(() => {
+    if (activeLessonId && courseId) {
+      try {
+        localStorage.setItem(`learnova_last_lesson_${courseId}`, activeLessonId);
+      } catch {
+        // ignore
+      }
+    }
+  }, [activeLessonId, courseId]);
+
+  // Mutation to toggle lesson progress
   const progressMutation = useMutation({
     mutationFn: async ({
       lessonId,
       isCompleted,
+      playbackPositionSeconds,
+      playbackDurationSeconds,
     }: {
       lessonId: string;
-      isCompleted: boolean;
+      isCompleted?: boolean;
+      playbackPositionSeconds?: number;
+      playbackDurationSeconds?: number;
     }) => {
-      return learningService.updateLessonProgress(lessonId, isCompleted);
+      if (!isOnline) {
+        enqueueProgress({
+          courseId: courseId!,
+          lessonId,
+          isCompleted,
+          playbackPositionSeconds,
+          playbackDurationSeconds,
+        });
+        setPendingOfflineCount(getPendingForCourse(courseId!).length);
+        return;
+      }
+
+      if (playbackPositionSeconds !== undefined || playbackDurationSeconds !== undefined) {
+        return learningService.updateLessonProgress(
+          lessonId,
+          isCompleted,
+          playbackPositionSeconds,
+          playbackDurationSeconds
+        );
+      }
+      return learningService.updateLessonProgress(lessonId, isCompleted!);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["learning-course", courseId] });
@@ -102,18 +235,41 @@ export function CourseLearningPage() {
     });
   };
 
+  const handleSaveVideoProgress = (
+    pos: number,
+    dur: number,
+    completedFlag?: boolean
+  ) => {
+    if (!activeLesson || !courseId) return;
+    progressMutation.mutate({
+      lessonId: activeLesson.id,
+      isCompleted: completedFlag,
+      playbackPositionSeconds: pos,
+      playbackDurationSeconds: dur,
+    });
+  };
+
   const handleNextLesson = () => {
     if (activeLessonIndex < allLessons.length - 1) {
-      setSelectedLessonId(allLessons[activeLessonIndex + 1].id);
+      const nextId = allLessons[activeLessonIndex + 1].id;
+      setSelectedLessonId(nextId);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const handlePreviousLesson = () => {
     if (activeLessonIndex > 0) {
-      setSelectedLessonId(allLessons[activeLessonIndex - 1].id);
+      const prevId = allLessons[activeLessonIndex - 1].id;
+      setSelectedLessonId(prevId);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  const toggleModuleCollapse = (moduleId: string) => {
+    setCollapsedModules((prev) => ({
+      ...prev,
+      [moduleId]: !prev[moduleId],
+    }));
   };
 
   if (isLoading) {
@@ -151,11 +307,50 @@ export function CourseLearningPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Offline Status Alert Banner */}
+      {!isOnline && (
+        <div
+          className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-3 rounded-xl flex items-center justify-between text-xs"
+          role="status"
+        >
+          <div className="flex items-center gap-2">
+            <WifiOff className="h-4 w-4 shrink-0 text-amber-500" />
+            <span>
+              <strong>Offline Mode</strong> — You are currently disconnected. Your lesson and
+              video progress are saved locally and will synchronize automatically when connection
+              resumes.
+            </span>
+          </div>
+          {pendingOfflineCount > 0 && (
+            <span className="font-semibold bg-amber-500/20 px-2 py-0.5 rounded-full shrink-0">
+              {pendingOfflineCount} queued
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Online Queue Syncing Toast */}
+      {isOnline && isSyncing && (
+        <div
+          className="bg-primary/10 border border-primary/20 text-primary p-2.5 rounded-xl flex items-center justify-between text-xs animate-pulse"
+          role="status"
+        >
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            <span>Synchronizing offline learning progress with server...</span>
+          </div>
+        </div>
+      )}
+
       {/* Top Classroom Bar */}
       <div className="bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-3">
           <Link to="/my-learning">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
+            >
               <ArrowLeft className="h-4 w-4" />
               Exit Classroom
             </Button>
@@ -236,67 +431,107 @@ export function CourseLearningPage() {
           </div>
 
           <div className="space-y-4 max-h-[700px] overflow-y-auto pr-1">
-            {learningCourse.modules.map((mod, modIdx) => (
-              <div key={mod.id} className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground px-2 py-1 bg-muted/40 rounded-md">
-                  <span>
-                    Module {modIdx + 1}: {mod.title}
-                  </span>
-                  <span>
-                    {mod.completed_lessons_count}/{mod.total_lessons_count}
-                  </span>
-                </div>
+            {learningCourse.modules.map((mod, modIdx) => {
+              const isCollapsed = !!collapsedModules[mod.id];
+              const modProgress =
+                mod.total_lessons_count > 0
+                  ? Math.round((mod.completed_lessons_count / mod.total_lessons_count) * 100)
+                  : 0;
+              const isModCompleted = mod.completed_lessons_count === mod.total_lessons_count && mod.total_lessons_count > 0;
 
-                <div className="space-y-1">
-                  {mod.lessons.map((les) => {
-                    const isActive = les.id === activeLesson?.id;
-                    const isDone = les.is_completed;
+              return (
+                <div key={mod.id} className="space-y-2 border border-border/60 rounded-lg p-2 bg-muted/20">
+                  {/* Module Header with Accordion & Progress Bar */}
+                  <div
+                    onClick={() => toggleModuleCollapse(mod.id)}
+                    className="flex flex-col gap-1.5 cursor-pointer px-1 py-1 select-none"
+                  >
+                    <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                      <div className="flex items-center gap-1.5 line-clamp-1">
+                        {isCollapsed ? (
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                        <span>
+                          Module {modIdx + 1}: {mod.title}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-normal text-muted-foreground shrink-0">
+                        {mod.completed_lessons_count}/{mod.total_lessons_count}
+                      </span>
+                    </div>
 
-                    return (
-                      <button
-                        key={les.id}
-                        onClick={() => {
-                          setSelectedLessonId(les.id);
-                          setSidebarOpen(false);
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
-                        className={`w-full flex items-center justify-between text-left p-2.5 rounded-lg text-xs transition-colors ${
-                          isActive
-                            ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                            : "hover:bg-muted text-foreground"
+                    {/* Module Mini Progress Bar */}
+                    <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${
+                          isModCompleted ? "bg-emerald-500" : "bg-primary"
                         }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                          {isDone ? (
-                            <CheckCircle
-                              className={`h-4 w-4 shrink-0 ${
-                                isActive ? "text-primary-foreground" : "text-emerald-500"
-                              }`}
-                            />
-                          ) : (
-                            <Circle
-                              className={`h-4 w-4 shrink-0 ${
-                                isActive ? "text-primary-foreground/70" : "text-muted-foreground"
-                              }`}
-                            />
-                          )}
-                          <span className="truncate">{les.title}</span>
-                        </div>
+                        style={{ width: `${modProgress}%` }}
+                      />
+                    </div>
+                  </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0 text-[10px] opacity-80">
-                          {les.content_type === "video" && <Video className="h-3 w-3" />}
-                          {les.content_type === "pdf" && <FileText className="h-3 w-3" />}
-                          {les.content_type === "external_resource" && (
-                            <ExternalLink className="h-3 w-3" />
-                          )}
-                          {les.duration_minutes > 0 && <span>{les.duration_minutes}m</span>}
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {/* Module Lessons List */}
+                  {!isCollapsed && (
+                    <div className="space-y-1 pt-1">
+                      {mod.lessons.map((les) => {
+                        const isActive = les.id === activeLesson?.id;
+                        const isDone = les.is_completed;
+                        const hasProgress = (les.playback_position_seconds || 0) > 0;
+
+                        return (
+                          <button
+                            key={les.id}
+                            onClick={() => {
+                              setSelectedLessonId(les.id);
+                              setSidebarOpen(false);
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className={`w-full flex items-center justify-between text-left p-2.5 rounded-lg text-xs transition-colors ${
+                              isActive
+                                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                                : "hover:bg-muted text-foreground"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                              {isDone ? (
+                                <CheckCircle
+                                  className={`h-4 w-4 shrink-0 ${
+                                    isActive ? "text-primary-foreground" : "text-emerald-500"
+                                  }`}
+                                />
+                              ) : (
+                                <Circle
+                                  className={`h-4 w-4 shrink-0 ${
+                                    isActive
+                                      ? "text-primary-foreground/70"
+                                      : hasProgress
+                                      ? "text-primary fill-primary/20"
+                                      : "text-muted-foreground"
+                                  }`}
+                                />
+                              )}
+                              <span className="truncate">{les.title}</span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0 text-[10px] opacity-80">
+                              {les.content_type === "video" && <Video className="h-3 w-3" />}
+                              {les.content_type === "pdf" && <FileText className="h-3 w-3" />}
+                              {les.content_type === "external_resource" && (
+                                <ExternalLink className="h-3 w-3" />
+                              )}
+                              {les.duration_minutes > 0 && <span>{les.duration_minutes}m</span>}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Course Quizzes & Assessments */}
             <div className="pt-4 border-t border-border space-y-2">
@@ -397,27 +632,19 @@ export function CourseLearningPage() {
                 )}
 
                 {activeLesson.content_type === "video" && (
-                  <div className="space-y-4">
-                    <div className="aspect-video w-full rounded-xl bg-muted overflow-hidden flex items-center justify-center border border-border">
-                      {activeLesson.resource_url?.includes("http") ? (
-                        <iframe
-                          src={activeLesson.resource_url}
-                          title={activeLesson.title}
-                          className="w-full h-full border-0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <div className="text-center p-8 space-y-3">
-                          <Video className="h-12 w-12 text-primary mx-auto opacity-70" />
-                          <p className="text-sm text-foreground font-medium">Video Resource Stream</p>
-                          <p className="text-xs text-muted-foreground max-w-md">
-                            Resource reference: {activeLesson.resource_url || "Standard video"}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <VideoLessonPlayer
+                    key={activeLesson.id}
+                    lessonId={activeLesson.id}
+                    courseId={courseId!}
+                    title={activeLesson.title}
+                    resourceUrl={activeLesson.resource_url}
+                    initialPositionSeconds={activeLesson.playback_position_seconds || 0}
+                    initialDurationSeconds={activeLesson.playback_duration_seconds || 0}
+                    isCompleted={activeLesson.is_completed}
+                    onSaveProgress={handleSaveVideoProgress}
+                    onMarkComplete={handleToggleComplete}
+                    isOffline={!isOnline}
+                  />
                 )}
 
                 {activeLesson.content_type === "pdf" && (
@@ -492,7 +719,12 @@ export function CourseLearningPage() {
                   {!activeLesson.is_completed && (
                     <Button
                       size="sm"
-                      onClick={handleToggleComplete}
+                      onClick={() => {
+                        handleToggleComplete();
+                        if (activeLessonIndex < allLessons.length - 1) {
+                          handleNextLesson();
+                        }
+                      }}
                       className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       <CheckCircle className="h-4 w-4" />
@@ -523,6 +755,7 @@ export function CourseLearningPage() {
           )}
         </main>
       </div>
+
       {/* Docked / Sliding AI Tutor Drawer */}
       {aiTutorOpen && (
         <div

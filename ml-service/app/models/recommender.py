@@ -29,17 +29,21 @@ class CourseRecommender:
                 is_fallback=False,
             )
 
-        # 2. Check for cold-start (new student with no course history)
+        # 2. Check for history or declared learning signals
+        learning_goals = getattr(student, "learning_goals", []) or []
+        skill_gaps = getattr(student, "skill_gaps", []) or []
         has_history = bool(
             student.completed_course_ids
             or student.completed_category_names
             or student.completed_course_titles
+            or learning_goals
+            or skill_gaps
         )
 
         if not has_history:
             return self._cold_start_recommendations(eligible_candidates, limit, len(all_candidates))
 
-        # 3. Content-based & Category similarity
+        # 3. Content-based, Category, Skill-Gap, and Goal similarity
         return self._personalized_recommendations(student, eligible_candidates, limit, len(all_candidates))
 
     def _cold_start_recommendations(
@@ -93,9 +97,18 @@ class CourseRecommender:
         limit: int,
         total_evaluated: int,
     ) -> RecommendationResponse:
-        """Calculates TF-IDF content similarity and category matching."""
-        # Build student profile text
-        history_tokens = list(student.completed_course_titles) + list(student.completed_category_names)
+        """Calculates multi-signal personalized recommendations with skill-gap and goal alignment."""
+        # Build student profile text including learning goals and skill gaps
+        learning_goals = [str(g).lower() for g in (getattr(student, "learning_goals", []) or []) if g]
+        skill_gaps = [str(sg).lower() for sg in (getattr(student, "skill_gaps", []) or []) if sg]
+        completed_titles = [str(t).lower() for t in (student.completed_course_titles or [])]
+
+        history_tokens = (
+            list(student.completed_course_titles or [])
+            + list(student.completed_category_names or [])
+            + learning_goals
+            + skill_gaps
+        )
         user_profile_text = " ".join(history_tokens)
 
         # Build candidate texts
@@ -113,33 +126,70 @@ class CourseRecommender:
 
         for idx, c in enumerate(candidates):
             content_sim = float(tfidf_sims[idx]) if idx < len(tfidf_sims) else 0.0
+            cand_text_lower = f"{c.title} {c.short_description} {c.category_name or ''} {' '.join(c.learning_objectives)}".lower()
 
-            # Category match bonus
+            # 1. Skill gap remediation check
+            matched_gap = next(
+                (g for g in skill_gaps if g in cand_text_lower or any(len(tok) >= 4 and tok in cand_text_lower for tok in g.split())),
+                None,
+            )
+
+            # 2. Learning goal alignment check
+            matched_goal = next(
+                (g for g in learning_goals if g in cand_text_lower or any(len(tok) >= 4 and tok in cand_text_lower for tok in g.split())),
+                None,
+            )
+
+            # 3. Category match bonus
             is_cat_match = (
                 (c.category_name and c.category_name in completed_categories)
                 or (c.category_id and c.category_id in completed_cat_ids)
             )
-            cat_bonus = 0.35 if is_cat_match else 0.0
+            cat_bonus = 0.25 if is_cat_match else 0.0
 
-            # Difficulty progression bonus
+            # 4. Difficulty progression bonus
             pref_diff = student.preferred_difficulty
             diff_bonus = 0.10 if (pref_diff and c.difficulty.lower() == pref_diff.lower()) else 0.05
 
-            total_score = min(0.99, (content_sim * 0.50) + cat_bonus + diff_bonus + 0.10)
+            # 5. Prerequisite evaluation
+            prereqs = c.prerequisites or []
+            if prereqs:
+                prereqs_met = all(
+                    any(p.lower().strip() in ct or ct in p.lower().strip() for ct in completed_titles)
+                    for p in prereqs
+                )
+                prereq_adj = 0.08 if prereqs_met else -0.15
+            else:
+                prereq_adj = 0.0
 
-            if is_cat_match and content_sim > 0.15:
+            # Calculate composite score
+            base_score = (content_sim * 0.40) + cat_bonus + diff_bonus + prereq_adj + 0.10
+
+            if matched_gap:
+                strategy = "skill_gap_remediation"
+                reason = f"Targeted recommendation to strengthen key concepts in '{matched_gap.capitalize()}' based on your recent assessment results."
+                total_score = min(0.99, base_score + 0.40)
+            elif matched_goal:
+                strategy = "goal_alignment"
+                reason = f"Directly aligns with your selected learning goal in '{matched_goal.capitalize()}'."
+                total_score = min(0.98, base_score + 0.30)
+            elif is_cat_match and content_sim > 0.15:
                 strategy = "content_based"
                 matched_title = student.completed_course_titles[0] if student.completed_course_titles else "prior coursework"
                 reason = f"Builds directly on your progress in '{matched_title}' within {c.category_name}."
+                total_score = min(0.98, base_score + 0.15)
             elif is_cat_match:
                 strategy = "category_matching"
                 reason = f"Expands your skills in {c.category_name}, matching your active study focus."
+                total_score = min(0.95, base_score + 0.10)
             elif content_sim > 0.20:
                 strategy = "content_based"
                 reason = "Strong topic alignment with concepts you recently practiced."
+                total_score = min(0.92, base_score)
             else:
                 strategy = "popularity_fallback"
                 reason = f"Recommended popular curriculum course in {c.category_name or 'the catalog'}."
+                total_score = max(0.50, min(0.85, base_score))
 
             scored_candidates.append((c, round(total_score, 3), strategy, reason))
 

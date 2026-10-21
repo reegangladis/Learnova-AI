@@ -23,10 +23,12 @@ from backend.app.schemas.enrollment import (
     EnrollmentResponse,
 )
 from backend.app.schemas.learning import (
+    BatchProgressSyncResponse,
     CourseProgressResponse,
     LearningCourseResponse,
     LearningLessonResponse,
     LearningModuleResponse,
+    LessonProgressBatchItem,
     LessonProgressResponse,
     ResumeLearningResponse,
 )
@@ -317,7 +319,7 @@ class LearningService:
             current_user.id, course_id
         )
         progress_map = {
-            p.lesson_id: p for p in progress_records if p.is_completed
+            p.lesson_id: p for p in progress_records
         }
 
         modules_response: list[LearningModuleResponse] = []
@@ -329,7 +331,7 @@ class LearningService:
                 if mod.lessons:
                     for les in mod.lessons:
                         p = progress_map.get(les.id)
-                        is_completed = p is not None
+                        is_completed = bool(p.is_completed) if p else False
                         if is_completed:
                             completed_mod_lessons += 1
 
@@ -347,6 +349,8 @@ class LearningService:
                                 is_preview=les.is_preview,
                                 is_completed=is_completed,
                                 completed_at=p.completed_at if p else None,
+                                playback_position_seconds=p.playback_position_seconds if p else 0.0,
+                                playback_duration_seconds=p.playback_duration_seconds if p else 0.0,
                             )
                         )
 
@@ -512,6 +516,7 @@ class LearningService:
 
         if next_incomplete:
             mod_id, les_id, title = next_incomplete
+            active_p = next((p for p in progress_records if p.lesson_id == les_id), None)
             return ResumeLearningResponse(
                 course_id=course_id,
                 next_lesson_id=les_id,
@@ -521,10 +526,12 @@ class LearningService:
                 progress_percentage=progress_pct,
                 completed_lessons=completed_count,
                 total_lessons=total_lessons,
+                playback_position_seconds=active_p.playback_position_seconds if active_p else 0.0,
             )
 
         # All lessons are completed — resume at the last lesson
         last_mod_id, last_les_id, last_title = ordered_lessons[-1]
+        last_p = next((p for p in progress_records if p.lesson_id == last_les_id), None)
         return ResumeLearningResponse(
             course_id=course_id,
             next_lesson_id=last_les_id,
@@ -534,15 +541,30 @@ class LearningService:
             progress_percentage=100.0,
             completed_lessons=total_lessons,
             total_lessons=total_lessons,
+            playback_position_seconds=last_p.playback_position_seconds if last_p else 0.0,
         )
 
     async def update_lesson_progress(
         self,
         current_user: User,
         lesson_id: uuid.UUID,
-        is_completed: bool,
+        is_completed: bool | None = None,
+        playback_position_seconds: float | None = None,
+        playback_duration_seconds: float | None = None,
     ) -> LessonProgressResponse:
-        """Idempotently update completion status for a lesson."""
+        """Idempotently update completion status and video playback progress for a lesson."""
+        if playback_position_seconds is not None and playback_position_seconds < 0:
+            raise ValidationException(message="Playback position cannot be negative.")
+        if playback_duration_seconds is not None and playback_duration_seconds < 0:
+            raise ValidationException(message="Playback duration cannot be negative.")
+        if (
+            playback_position_seconds is not None
+            and playback_duration_seconds is not None
+            and playback_duration_seconds > 0
+            and playback_position_seconds > playback_duration_seconds + 30.0
+        ):
+            raise ValidationException(message="Playback position exceeds video duration.")
+
         lesson = await self.course_repo.get_lesson_by_id(lesson_id)
         if not lesson:
             raise ResourceNotFoundError(message="Lesson not found.")
@@ -575,6 +597,8 @@ class LearningService:
             lesson_id=lesson.id,
             course_id=course_id,
             is_completed=is_completed,
+            playback_position_seconds=playback_position_seconds,
+            playback_duration_seconds=playback_duration_seconds,
         )
 
         # Trigger course progress recalculation
@@ -588,6 +612,9 @@ class LearningService:
             course_id=progress.course_id,
             is_completed=progress.is_completed,
             completed_at=progress.completed_at,
+            playback_position_seconds=progress.playback_position_seconds,
+            playback_duration_seconds=progress.playback_duration_seconds,
+            last_accessed_at=progress.last_accessed_at,
             created_at=progress.created_at,
             updated_at=progress.updated_at,
         )
@@ -617,6 +644,9 @@ class LearningService:
                 course_id=course_id,
                 is_completed=False,
                 completed_at=None,
+                playback_position_seconds=0.0,
+                playback_duration_seconds=0.0,
+                last_accessed_at=None,
                 created_at=now,
                 updated_at=now,
             )
@@ -628,6 +658,70 @@ class LearningService:
             course_id=progress.course_id,
             is_completed=progress.is_completed,
             completed_at=progress.completed_at,
+            playback_position_seconds=progress.playback_position_seconds,
+            playback_duration_seconds=progress.playback_duration_seconds,
+            last_accessed_at=progress.last_accessed_at,
             created_at=progress.created_at,
             updated_at=progress.updated_at,
+        )
+
+    async def sync_offline_progress(
+        self,
+        current_user: User,
+        course_id: uuid.UUID,
+        updates: list[LessonProgressBatchItem],
+    ) -> BatchProgressSyncResponse:
+        """Idempotently synchronize queued offline progress updates for an enrolled course."""
+        course = await self.course_repo.get_by_id(course_id, include_modules=True)
+        if not course:
+            raise ResourceNotFoundError(message="Course not found.")
+
+        is_admin_or_instructor = (
+            self._is_admin(current_user)
+            or SystemRole.INSTRUCTOR.value
+            in {r.upper() for r in current_user.role_names}
+        )
+        enrollment = await self.enrollment_repo.get_by_user_and_course(
+            current_user.id, course_id
+        )
+        if not enrollment and not is_admin_or_instructor:
+            raise ForbiddenError(
+                message="Active enrollment required to synchronize progress."
+            )
+
+        # Collect valid lesson IDs in this course
+        valid_lesson_ids: set[uuid.UUID] = set()
+        if course.modules:
+            for m in course.modules:
+                if m.lessons:
+                    for l in m.lessons:
+                        valid_lesson_ids.add(l.id)
+
+        synced_count = 0
+        for item in updates:
+            if item.lesson_id not in valid_lesson_ids:
+                continue
+            if item.playback_position_seconds is not None and item.playback_position_seconds < 0:
+                continue
+            if item.playback_duration_seconds is not None and item.playback_duration_seconds < 0:
+                continue
+
+            await self.progress_repo.upsert_progress(
+                user_id=current_user.id,
+                lesson_id=item.lesson_id,
+                course_id=course_id,
+                is_completed=item.is_completed,
+                playback_position_seconds=item.playback_position_seconds,
+                playback_duration_seconds=item.playback_duration_seconds,
+            )
+            synced_count += 1
+
+        # Recalculate course progress
+        course_progress = await self.get_course_progress(current_user, course_id)
+        await self.db.commit()
+
+        return BatchProgressSyncResponse(
+            course_id=course_id,
+            synced_count=synced_count,
+            progress=course_progress,
         )

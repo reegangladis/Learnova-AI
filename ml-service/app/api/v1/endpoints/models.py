@@ -56,8 +56,10 @@ async def train_model(request: TrainModelRequest) -> TrainModelResponse:
         success=True,
         model_name=request.model_name,
         version=version,
+        status="experimental",
         metrics=metrics,
         training_samples=n_train,
         test_samples=n_test,
+        provenance="synthetic_educational_benchmark",
         message="Model trained, evaluated, and persisted successfully to local registry.",
     )

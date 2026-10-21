@@ -5,9 +5,34 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class LessonProgressUpdate(BaseModel):
-    """Payload to update lesson progress state idempotently."""
+    """Payload to update lesson progress state and playback position idempotently."""
 
-    is_completed: bool = Field(True, description="Whether the lesson is marked completed")
+    is_completed: bool | None = Field(None, description="Whether the lesson is marked completed")
+    playback_position_seconds: float | None = Field(
+        None, ge=0.0, description="Current video playback position in seconds"
+    )
+    playback_duration_seconds: float | None = Field(
+        None, ge=0.0, description="Total video duration in seconds"
+    )
+
+
+class LessonProgressBatchItem(BaseModel):
+    """Individual progress update entry within an offline sync batch."""
+
+    lesson_id: uuid.UUID
+    is_completed: bool | None = None
+    playback_position_seconds: float | None = Field(None, ge=0.0)
+    playback_duration_seconds: float | None = Field(None, ge=0.0)
+    client_timestamp: datetime | None = None
+
+
+class BatchProgressSyncRequest(BaseModel):
+    """Payload for synchronizing queued offline progress updates."""
+
+    course_id: uuid.UUID
+    updates: list[LessonProgressBatchItem] = Field(
+        default_factory=list, description="Ordered offline progress queue"
+    )
 
 
 class LessonProgressResponse(BaseModel):
@@ -21,6 +46,9 @@ class LessonProgressResponse(BaseModel):
     course_id: uuid.UUID
     is_completed: bool
     completed_at: datetime | None = None
+    playback_position_seconds: float = 0.0
+    playback_duration_seconds: float = 0.0
+    last_accessed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -34,6 +62,14 @@ class CourseProgressResponse(BaseModel):
     progress_percentage: float
     completed_lesson_ids: list[uuid.UUID] = Field(default_factory=list)
     is_course_completed: bool = False
+
+
+class BatchProgressSyncResponse(BaseModel):
+    """Result of processing an offline progress sync queue."""
+
+    course_id: uuid.UUID
+    synced_count: int
+    progress: CourseProgressResponse
 
 
 class LearningLessonResponse(BaseModel):
@@ -53,6 +89,8 @@ class LearningLessonResponse(BaseModel):
     is_preview: bool = False
     is_completed: bool = False
     completed_at: datetime | None = None
+    playback_position_seconds: float = 0.0
+    playback_duration_seconds: float = 0.0
 
 
 class LearningModuleResponse(BaseModel):
@@ -103,3 +141,4 @@ class ResumeLearningResponse(BaseModel):
     progress_percentage: float = 0.0
     completed_lessons: int = 0
     total_lessons: int = 0
+    playback_position_seconds: float = 0.0

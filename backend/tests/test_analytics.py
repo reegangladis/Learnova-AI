@@ -485,3 +485,101 @@ async def test_date_filtering_and_boundaries(
     # Invalid boundary: days=400 (should fail le=365 validation)
     res_err2 = await client.get("/api/v1/analytics/student/activity?days=400", cookies=cookie)
     assert res_err2.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_instructor_course_level_overview_filtering(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Verifies that an instructor can filter their overview stats by course_id."""
+    inst = await create_user(
+        db_session, "inst_course_filter@learnova.ai", SystemRole.INSTRUCTOR.value
+    )
+    s1 = await create_user(db_session, "stud_filter1@learnova.ai", SystemRole.STUDENT.value)
+    s2 = await create_user(db_session, "stud_filter2@learnova.ai", SystemRole.STUDENT.value)
+
+    c1 = Course(
+        title="Course A For Filtering",
+        slug=f"course-a-{uuid.uuid4().hex[:6]}",
+        short_description="Course A",
+        description="Course A Desc",
+        instructor_id=inst.id,
+        status=CourseStatus.PUBLISHED.value,
+    )
+    c2 = Course(
+        title="Course B For Filtering",
+        slug=f"course-b-{uuid.uuid4().hex[:6]}",
+        short_description="Course B",
+        description="Course B Desc",
+        instructor_id=inst.id,
+        status=CourseStatus.PUBLISHED.value,
+    )
+    db_session.add_all([c1, c2])
+    await db_session.flush()
+
+    # Enroll s1 in c1 (completed), s2 in c2 (active)
+    enr1 = Enrollment(user_id=s1.id, course_id=c1.id, status=EnrollmentStatus.COMPLETED.value)
+    enr2 = Enrollment(user_id=s2.id, course_id=c2.id, status=EnrollmentStatus.ACTIVE.value)
+    db_session.add_all([enr1, enr2])
+    await db_session.commit()
+
+    cookie = await get_auth_cookie(client, "inst_course_filter@learnova.ai")
+
+    # Overview with course_id=c1.id
+    res1 = await client.get(f"/api/v1/analytics/instructor/overview?course_id={c1.id}", cookies=cookie)
+    assert res1.status_code == 200
+    d1 = res1.json()
+    assert d1["total_courses"] == 1
+    assert d1["total_enrollments"] == 1
+    assert d1["completed_enrollments"] == 1
+    assert d1["course_completion_rate"] == 100.0
+
+    # Overview with course_id=c2.id
+    res2 = await client.get(f"/api/v1/analytics/instructor/overview?course_id={c2.id}", cookies=cookie)
+    assert res2.status_code == 200
+    d2 = res2.json()
+    assert d2["total_courses"] == 1
+    assert d2["total_enrollments"] == 1
+    assert d2["active_enrollments"] == 1
+    assert d2["completed_enrollments"] == 0
+    assert d2["course_completion_rate"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_instructor_unauthorized_course_filter_forbidden(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Verifies that an instructor cannot filter by a course belonging to another instructor (403)."""
+    inst1 = await create_user(
+        db_session, "inst_filter_owner@learnova.ai", SystemRole.INSTRUCTOR.value
+    )
+    inst2 = await create_user(
+        db_session, "inst_filter_other@learnova.ai", SystemRole.INSTRUCTOR.value
+    )
+    other_course = Course(
+        title="Other Instructor Course",
+        slug=f"other-inst-course-{uuid.uuid4().hex[:6]}",
+        short_description="Other",
+        description="Other",
+        instructor_id=inst2.id,
+        status=CourseStatus.PUBLISHED.value,
+    )
+    db_session.add(other_course)
+    await db_session.commit()
+
+    cookie1 = await get_auth_cookie(client, "inst_filter_owner@learnova.ai")
+
+    # Trying to view other instructor's course overview -> 403 Forbidden
+    res = await client.get(
+        f"/api/v1/analytics/instructor/overview?course_id={other_course.id}",
+        cookies=cookie1,
+    )
+    assert res.status_code == 403
+    assert "courses you instruct" in res.json()["error"]["message"]
+
+    # Trying to view other instructor's course assessments -> 403 Forbidden
+    res_ass = await client.get(
+        f"/api/v1/analytics/instructor/assessments?course_id={other_course.id}",
+        cookies=cookie1,
+    )
+    assert res_ass.status_code == 403

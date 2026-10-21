@@ -31,6 +31,9 @@ export interface LessonProgress {
   course_id: string;
   is_completed: boolean;
   completed_at: string | null;
+  playback_position_seconds?: number;
+  playback_duration_seconds?: number;
+  last_accessed_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +60,8 @@ export interface LearningLesson {
   is_preview: boolean;
   is_completed: boolean;
   completed_at: string | null;
+  playback_position_seconds?: number;
+  playback_duration_seconds?: number;
 }
 
 export interface LearningModule {
@@ -97,4 +102,24 @@ export interface ResumeLearning {
   progress_percentage: number;
   completed_lessons: number;
   total_lessons: number;
+  playback_position_seconds?: number;
+}
+
+export interface LessonProgressBatchItem {
+  lesson_id: string;
+  is_completed?: boolean | null;
+  playback_position_seconds?: number | null;
+  playback_duration_seconds?: number | null;
+  client_timestamp?: string | null;
+}
+
+export interface BatchProgressSyncRequest {
+  course_id: string;
+  updates: LessonProgressBatchItem[];
+}
+
+export interface BatchProgressSyncResponse {
+  course_id: string;
+  synced_count: number;
+  progress: CourseProgress;
 }

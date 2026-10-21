@@ -47,14 +47,48 @@ export const learningService = {
 
   async updateLessonProgress(
     lessonId: string,
-    isCompleted: boolean
+    isCompleted?: boolean,
+    playbackPositionSeconds?: number,
+    playbackDurationSeconds?: number
   ): Promise<LessonProgress> {
-    return apiClient.put<LessonProgress>(`/learning/lessons/${lessonId}/progress`, {
-      is_completed: isCompleted,
-    });
+    const payload: {
+      is_completed?: boolean;
+      playback_position_seconds?: number;
+      playback_duration_seconds?: number;
+    } = {};
+    if (isCompleted !== undefined) payload.is_completed = isCompleted;
+    if (playbackPositionSeconds !== undefined)
+      payload.playback_position_seconds = playbackPositionSeconds;
+    if (playbackDurationSeconds !== undefined)
+      payload.playback_duration_seconds = playbackDurationSeconds;
+
+    return apiClient.put<LessonProgress>(
+      `/learning/lessons/${lessonId}/progress`,
+      payload
+    );
   },
 
   async getLessonProgress(lessonId: string): Promise<LessonProgress> {
     return apiClient.get<LessonProgress>(`/learning/lessons/${lessonId}/progress`);
+  },
+
+  async syncOfflineProgress(
+    courseId: string,
+    updates: Array<{
+      lesson_id: string;
+      is_completed?: boolean | null;
+      playback_position_seconds?: number | null;
+      playback_duration_seconds?: number | null;
+      client_timestamp?: string | null;
+    }>
+  ) {
+    return apiClient.post<{
+      course_id: string;
+      synced_count: number;
+      progress: CourseProgress;
+    }>("/learning/progress/sync", {
+      course_id: courseId,
+      updates,
+    });
   },
 };

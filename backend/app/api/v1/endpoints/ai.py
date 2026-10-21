@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.api.deps import get_current_user
@@ -14,6 +14,8 @@ from backend.app.schemas.ai import (
     AIConversationResponse,
     CourseIngestionResponse,
     CourseIngestionStatusResponse,
+    DocumentIngestionRequest,
+    DocumentIngestionResponse,
     LessonIngestionResponse,
 )
 from backend.app.services.ai_service import AIService
@@ -137,3 +139,57 @@ async def reprocess_lesson_content(
 ) -> LessonIngestionResponse:
     service = AIService(db)
     return await service.reprocess_lesson(lesson_id, current_user)
+
+
+@router.post(
+    "/ingestion/courses/{course_id}/documents",
+    response_model=DocumentIngestionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Ingest raw text/markdown document into course RAG index",
+    description="Parses, chunks, embeds, and indexes a raw text/markdown document for a course.",
+)
+async def ingest_document_text(
+    course_id: uuid.UUID,
+    request: DocumentIngestionRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> DocumentIngestionResponse:
+    service = AIService(db)
+    file_bytes = request.content.encode("utf-8")
+    filename = f"{request.title}.{request.file_type}"
+    return await service.ingest_document(
+        course_id=course_id,
+        current_user=current_user,
+        file_bytes=file_bytes,
+        filename=filename,
+        title=request.title,
+        lesson_id=request.lesson_id,
+    )
+
+
+@router.post(
+    "/ingestion/courses/{course_id}/upload",
+    response_model=DocumentIngestionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Upload and ingest PDF or text document into course RAG index",
+    description="Uploads a PDF, Markdown, or text file, extracts text page-by-page, and embeds into the course RAG store.",
+)
+async def upload_and_ingest_document(
+    course_id: uuid.UUID,
+    file: Annotated[UploadFile, File(description="PDF, TXT, or MD file to index")],
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    lesson_id: Annotated[uuid.UUID | None, Form(description="Optional associated lesson ID")] = None,
+    title: Annotated[str | None, Form(description="Optional document title")] = None,
+) -> DocumentIngestionResponse:
+    service = AIService(db)
+    file_bytes = await file.read()
+    return await service.ingest_document(
+        course_id=course_id,
+        current_user=current_user,
+        file_bytes=file_bytes,
+        filename=file.filename or "document.pdf",
+        title=title,
+        lesson_id=lesson_id,
+    )
+

@@ -500,3 +500,302 @@ async def test_cross_organization_enrollment_protection(
     )
     assert fail_res.status_code == 403
     assert "not accessible within your organization" in fail_res.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_video_playback_progress_persistence_and_resumption(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """Verifies saving video playback position, retrieval in course view, and resuming with position."""
+    await create_user(db_session, "admin.vid@learnova.ai", SystemRole.ADMIN.value)
+    await create_user(db_session, "inst.vid@learnova.ai", SystemRole.INSTRUCTOR.value)
+    await create_user(db_session, "student.vid@learnova.ai", SystemRole.STUDENT.value)
+
+    admin_cookie = await get_auth_cookie(client, "admin.vid@learnova.ai")
+    inst_cookie = await get_auth_cookie(client, "inst.vid@learnova.ai")
+    student_cookie = await get_auth_cookie(client, "student.vid@learnova.ai")
+
+    # 1. Create course with a video lesson
+    cat_res = await client.post(
+        "/api/v1/course-categories",
+        json={"name": f"Video Category {uuid.uuid4().hex[:6]}"},
+        cookies=admin_cookie,
+    )
+    cat_id = cat_res.json()["id"]
+
+    course_res = await client.post(
+        "/api/v1/courses",
+        json={
+            "title": "Modern Video Production & Streaming",
+            "short_description": "Course with multimedia video lectures",
+            "description": "Learn video streaming protocols and encoding.",
+            "category_id": cat_id,
+        },
+        cookies=inst_cookie,
+    )
+    course_id = course_res.json()["id"]
+
+    mod_res = await client.post(
+        f"/api/v1/courses/{course_id}/modules",
+        json={"title": "Module 1: Video Fundamentals"},
+        cookies=inst_cookie,
+    )
+    mod_id = mod_res.json()["id"]
+
+    vid_lesson_res = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Lesson 1: Introduction Video",
+            "content_type": "video",
+            "resource_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "duration_minutes": 10,
+        },
+        cookies=inst_cookie,
+    )
+    assert vid_lesson_res.status_code == 201
+    vid_lesson_id = vid_lesson_res.json()["id"]
+
+    txt_lesson_res = await client.post(
+        f"/api/v1/modules/{mod_id}/lessons",
+        json={
+            "title": "Lesson 2: Reading Notes",
+            "content_type": "text",
+            "text_content": "# Lesson 2 Notes\nComprehensive guide.",
+            "duration_minutes": 5,
+        },
+        cookies=inst_cookie,
+    )
+    assert txt_lesson_res.status_code == 201
+    txt_lesson_id = txt_lesson_res.json()["id"]
+
+    # Publish course
+    await client.post(f"/api/v1/courses/{course_id}/publish", cookies=inst_cookie)
+
+    # Student enrolls
+    await client.post(
+        "/api/v1/enrollments",
+        json={"course_id": course_id},
+        cookies=student_cookie,
+    )
+
+    # 2. Student updates playback position to 142.5 seconds without completing
+    prog_res = await client.put(
+        f"/api/v1/learning/lessons/{vid_lesson_id}/progress",
+        json={
+            "playback_position_seconds": 142.5,
+            "playback_duration_seconds": 600.0,
+            "is_completed": False,
+        },
+        cookies=student_cookie,
+    )
+    assert prog_res.status_code == 200
+    prog_data = prog_res.json()
+    assert prog_data["playback_position_seconds"] == 142.5
+    assert prog_data["playback_duration_seconds"] == 600.0
+    assert prog_data["is_completed"] is False
+
+    # 3. Learning view includes restored playback position
+    view_res = await client.get(
+        f"/api/v1/learning/courses/{course_id}",
+        cookies=student_cookie,
+    )
+    assert view_res.status_code == 200
+    view_data = view_res.json()
+    mod_lessons = view_data["modules"][0]["lessons"]
+    vid_les = next(l for l in mod_lessons if l["id"] == vid_lesson_id)
+    assert vid_les["playback_position_seconds"] == 142.5
+    assert vid_les["playback_duration_seconds"] == 600.0
+    assert vid_les["is_completed"] is False
+
+    # 4. Resume learning selects the video lesson with its saved playback position
+    resume_res = await client.get(
+        f"/api/v1/learning/courses/{course_id}/resume",
+        cookies=student_cookie,
+    )
+    assert resume_res.status_code == 200
+    resume_data = resume_res.json()
+    assert resume_data["next_lesson_id"] == vid_lesson_id
+    assert resume_data["playback_position_seconds"] == 142.5
+
+    # 5. Mark video lesson as completed
+    complete_res = await client.put(
+        f"/api/v1/learning/lessons/{vid_lesson_id}/progress",
+        json={
+            "playback_position_seconds": 595.0,
+            "playback_duration_seconds": 600.0,
+            "is_completed": True,
+        },
+        cookies=student_cookie,
+    )
+    assert complete_res.status_code == 200
+    assert complete_res.json()["is_completed"] is True
+
+    # Resume now selects next incomplete lesson (Lesson 2)
+    resume2_res = await client.get(
+        f"/api/v1/learning/courses/{course_id}/resume",
+        cookies=student_cookie,
+    )
+    assert resume2_res.status_code == 200
+    assert resume2_res.json()["next_lesson_id"] == txt_lesson_id
+
+
+@pytest.mark.asyncio
+async def test_video_playback_validation_server_side(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """Ensures server-side validation rejects invalid playback positions and durations."""
+    await create_user(db_session, "admin.val@learnova.ai", SystemRole.ADMIN.value)
+    await create_user(db_session, "inst.val@learnova.ai", SystemRole.INSTRUCTOR.value)
+    await create_user(db_session, "student.val@learnova.ai", SystemRole.STUDENT.value)
+
+    admin_cookie = await get_auth_cookie(client, "admin.val@learnova.ai")
+    inst_cookie = await get_auth_cookie(client, "inst.val@learnova.ai")
+    student_cookie = await get_auth_cookie(client, "student.val@learnova.ai")
+
+    course_id, lesson_ids = await setup_published_course(
+        client, admin_cookie, inst_cookie, title="Playback Validation Course", num_lessons=1
+    )
+    les_id = lesson_ids[0]
+
+    await client.post(
+        "/api/v1/enrollments",
+        json={"course_id": course_id},
+        cookies=student_cookie,
+    )
+
+    # 1. Negative playback position rejected
+    bad_pos = await client.put(
+        f"/api/v1/learning/lessons/{les_id}/progress",
+        json={"playback_position_seconds": -15.0},
+        cookies=student_cookie,
+    )
+    assert bad_pos.status_code == 422
+
+    # 2. Negative duration rejected
+    bad_dur = await client.put(
+        f"/api/v1/learning/lessons/{les_id}/progress",
+        json={"playback_duration_seconds": -5.0},
+        cookies=student_cookie,
+    )
+    assert bad_dur.status_code == 422
+
+    # 3. Position exceeds duration by more than allowed 30s grace window
+    bad_overflow = await client.put(
+        f"/api/v1/learning/lessons/{les_id}/progress",
+        json={
+            "playback_position_seconds": 600.0,
+            "playback_duration_seconds": 200.0,
+        },
+        cookies=student_cookie,
+    )
+    assert bad_overflow.status_code == 422
+    assert "exceeds video duration" in bad_overflow.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_offline_progress_batch_sync_idempotence(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """Verifies batch synchronization of queued offline progress updates."""
+    await create_user(db_session, "admin.sync@learnova.ai", SystemRole.ADMIN.value)
+    await create_user(db_session, "inst.sync@learnova.ai", SystemRole.INSTRUCTOR.value)
+    await create_user(db_session, "student.sync@learnova.ai", SystemRole.STUDENT.value)
+    await create_user(db_session, "other.sync@learnova.ai", SystemRole.STUDENT.value)
+
+    admin_cookie = await get_auth_cookie(client, "admin.sync@learnova.ai")
+    inst_cookie = await get_auth_cookie(client, "inst.sync@learnova.ai")
+    student_cookie = await get_auth_cookie(client, "student.sync@learnova.ai")
+    other_cookie = await get_auth_cookie(client, "other.sync@learnova.ai")
+
+    course_id, lesson_ids = await setup_published_course(
+        client, admin_cookie, inst_cookie, title="Offline Sync Architecture", num_lessons=3
+    )
+
+    # 1. Non-enrolled user rejected with 403
+    unauth_sync = await client.post(
+        "/api/v1/learning/progress/sync",
+        json={
+            "course_id": course_id,
+            "updates": [{"lesson_id": lesson_ids[0], "is_completed": True}],
+        },
+        cookies=other_cookie,
+    )
+    assert unauth_sync.status_code == 403
+
+    # Student enrolls
+    await client.post(
+        "/api/v1/enrollments",
+        json={"course_id": course_id},
+        cookies=student_cookie,
+    )
+
+    # 2. Sync batch with 2 updates (Lesson 1 completed, Lesson 2 video progress)
+    sync_res = await client.post(
+        "/api/v1/learning/progress/sync",
+        json={
+            "course_id": course_id,
+            "updates": [
+                {
+                    "lesson_id": lesson_ids[0],
+                    "is_completed": True,
+                    "playback_position_seconds": 60.0,
+                    "playback_duration_seconds": 60.0,
+                },
+                {
+                    "lesson_id": lesson_ids[1],
+                    "is_completed": False,
+                    "playback_position_seconds": 45.0,
+                    "playback_duration_seconds": 180.0,
+                },
+            ],
+        },
+        cookies=student_cookie,
+    )
+    assert sync_res.status_code == 200
+    sync_data = sync_res.json()
+    assert sync_data["course_id"] == course_id
+    assert sync_data["synced_count"] == 2
+    assert sync_data["progress"]["completed_lessons"] == 1
+    assert sync_data["progress"]["total_lessons"] == 3
+    assert sync_data["progress"]["progress_percentage"] == 33.3
+
+    # 3. Idempotent replay with duplicates does not corrupt progress or inflate counts
+    replay_res = await client.post(
+        "/api/v1/learning/progress/sync",
+        json={
+            "course_id": course_id,
+            "updates": [
+                {
+                    "lesson_id": lesson_ids[0],
+                    "is_completed": True,
+                },
+                {
+                    "lesson_id": lesson_ids[0],
+                    "is_completed": True,
+                },
+            ],
+        },
+        cookies=student_cookie,
+    )
+    assert replay_res.status_code == 200
+    assert replay_res.json()["progress"]["completed_lessons"] == 1
+    assert replay_res.json()["progress"]["progress_percentage"] == 33.3
+
+    # 4. Sync completing remaining lessons 2 and 3
+    complete_sync = await client.post(
+        "/api/v1/learning/progress/sync",
+        json={
+            "course_id": course_id,
+            "updates": [
+                {"lesson_id": lesson_ids[1], "is_completed": True},
+                {"lesson_id": lesson_ids[2], "is_completed": True},
+            ],
+        },
+        cookies=student_cookie,
+    )
+    assert complete_sync.status_code == 200
+    comp_progress = complete_sync.json()["progress"]
+    assert comp_progress["completed_lessons"] == 3
+    assert comp_progress["progress_percentage"] == 100.0
+    assert comp_progress["is_course_completed"] is True
+

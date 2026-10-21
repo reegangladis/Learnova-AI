@@ -132,6 +132,8 @@ class InstructorOverviewResponse(BaseModel):
     average_quiz_score: float = 0.0
     quiz_pass_rate: float = 0.0
     trends: list[InstructorTrendItem] = Field(default_factory=list)
+    course_id: uuid.UUID | None = None
+    organization_id: uuid.UUID | None = None
 
 
 class InstructorCourseComparisonItem(BaseModel):

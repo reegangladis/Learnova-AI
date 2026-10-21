@@ -25,6 +25,7 @@ import { analyticsService } from "@/services/analyticsService";
 
 export const InstructorAnalyticsDashboard: React.FC = () => {
   const [selectedDays, setSelectedDays] = useState<number>(30);
+  const [selectedOverviewCourseId, setSelectedOverviewCourseId] = useState<string>("");
   const [courseSearch, setCourseSearch] = useState<string>("");
   const [selectedAssessmentCourseId, setSelectedAssessmentCourseId] = useState<string>("");
 
@@ -35,8 +36,12 @@ export const InstructorAnalyticsDashboard: React.FC = () => {
     error: overviewError,
     refetch: refetchOverview,
   } = useQuery({
-    queryKey: ["instructor_analytics_overview", selectedDays],
-    queryFn: () => analyticsService.getInstructorOverview(selectedDays),
+    queryKey: ["instructor_analytics_overview", selectedDays, selectedOverviewCourseId],
+    queryFn: () =>
+      analyticsService.getInstructorOverview(
+        selectedDays,
+        selectedOverviewCourseId || undefined
+      ),
   });
 
   // 2. Fetch instructor course comparison list
@@ -80,7 +85,21 @@ export const InstructorAnalyticsDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            id="instructor-overview-course-filter"
+            value={selectedOverviewCourseId}
+            onChange={(e) => setSelectedOverviewCourseId(e.target.value)}
+            className="h-9 px-3 py-1 text-xs rounded-md border border-input bg-background text-foreground shadow-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+            aria-label="Filter overview by course"
+          >
+            <option value="">All Authored Courses</option>
+            {coursesData?.courses?.map((c) => (
+              <option key={c.course_id} value={c.course_id}>
+                {c.title}
+              </option>
+            ))}
+          </select>
           <DateRangeSelector value={selectedDays} onChange={setSelectedDays} />
           <Link to="/instructor/courses/new">
             <Button size="sm" className="gap-1.5">

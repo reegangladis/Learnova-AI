@@ -1,4 +1,5 @@
 import uuid
+import zlib
 
 import pytest
 from httpx import AsyncClient
@@ -464,3 +465,207 @@ async def test_organization_isolation(
         cookies=cookies_admin1,
     )
     assert res.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_document_ingestion_pdf_and_text_with_citations(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Verifies PDF and Markdown document parsing, page extraction, deduplication, and grounded citations."""
+    instructor = await create_user(
+        db_session, "inst.doc@learnova.ai", SystemRole.INSTRUCTOR.value
+    )
+    student = await create_user(
+        db_session, "student.doc@learnova.ai", SystemRole.STUDENT.value
+    )
+    course = await setup_course_with_lessons(db_session, instructor)
+
+    # Enroll student
+    enrollment = Enrollment(
+        id=uuid.uuid4(),
+        user_id=student.id,
+        course_id=course.id,
+        status=EnrollmentStatus.ACTIVE.value,
+    )
+    db_session.add(enrollment)
+    await db_session.commit()
+
+    inst_cookie = await get_auth_cookie(client, "inst.doc@learnova.ai")
+    student_cookie = await get_auth_cookie(client, "student.doc@learnova.ai")
+
+    # 1. Ingest Markdown document text via JSON endpoint
+    doc_res = await client.post(
+        f"/api/v1/ai/ingestion/courses/{course.id}/documents",
+        json={
+            "title": "System Architecture Overview",
+            "content": "# Architectural Principles\nMicroservices communicate via asynchronous messaging and event sourcing.",
+            "file_type": "markdown",
+        },
+        cookies=inst_cookie,
+    )
+    assert doc_res.status_code == 200
+    doc_data = doc_res.json()
+    assert doc_data["document_title"] == "System Architecture Overview"
+    assert doc_data["status"] == "completed"
+    assert doc_data["chunks_count"] >= 1
+
+    # 2. Ingest valid PDF document via upload endpoint
+    pdf_bytes = (
+        b"%PDF-1.4\n"
+        b"1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
+        b"2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj\n"
+        b"3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R>> endobj\n"
+        b"4 0 obj <</Length 60 /Filter /FlateDecode>>\nstream\n"
+        + zlib.compress(b"BT /F1 12 Tf 72 712 Td (Byzantine Fault Tolerance and PBFT Protocol) Tj ET")
+        + b"\nendstream\nendobj\nxref\n0 5\ntrailer <</Size 5 /Root 1 0 R>>\nstartxref\n300\n%%EOF\n"
+    )
+
+    pdf_upload = await client.post(
+        f"/api/v1/ai/ingestion/courses/{course.id}/upload",
+        files={"file": ("pbft_guide.pdf", pdf_bytes, "application/pdf")},
+        data={"title": "PBFT Consensus Handbook"},
+        cookies=inst_cookie,
+    )
+    assert pdf_upload.status_code == 200
+    pdf_data = pdf_upload.json()
+    assert pdf_data["document_title"] == "PBFT Consensus Handbook"
+    assert pdf_data["total_pages"] == 1
+    assert pdf_data["chunks_count"] >= 1
+
+    # 3. Test Deduplication: Re-uploading identical PDF does not duplicate chunks
+    dup_upload = await client.post(
+        f"/api/v1/ai/ingestion/courses/{course.id}/upload",
+        files={"file": ("pbft_guide.pdf", pdf_bytes, "application/pdf")},
+        data={"title": "PBFT Consensus Handbook"},
+        cookies=inst_cookie,
+    )
+    assert dup_upload.status_code == 200
+    assert dup_upload.json()["chunks_count"] == pdf_data["chunks_count"]
+
+    # 4. Student queries content from the PDF: verifies citation has document_title and page_number
+    chat_res = await client.post(
+        "/api/v1/ai/chat",
+        json={
+            "course_id": str(course.id),
+            "message": "What is Byzantine Fault Tolerance and PBFT?",
+        },
+        cookies=student_cookie,
+    )
+    assert chat_res.status_code == 200
+    chat_data = chat_res.json()
+    assert chat_data["is_grounded"] is True
+    assert len(chat_data["sources"]) > 0
+    pbft_cite = next((s for s in chat_data["sources"] if s.get("document_title") == "PBFT Consensus Handbook"), None)
+    assert pbft_cite is not None
+    assert pbft_cite["page_number"] == 1
+    assert "Byzantine Fault Tolerance" in pbft_cite["snippet"]
+
+
+@pytest.mark.asyncio
+async def test_document_validation_and_unauthorized_upload(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Verifies file validation (size, type, empty content, magic bytes) and RBAC rejection."""
+    instructor = await create_user(
+        db_session, "inst.val@learnova.ai", SystemRole.INSTRUCTOR.value
+    )
+    student = await create_user(
+        db_session, "student.val@learnova.ai", SystemRole.STUDENT.value
+    )
+    course = await setup_course_with_lessons(db_session, instructor)
+
+    inst_cookie = await get_auth_cookie(client, "inst.val@learnova.ai")
+    student_cookie = await get_auth_cookie(client, "student.val@learnova.ai")
+
+    # 1. Student attempting to upload document -> 403 Forbidden
+    unauth_upload = await client.post(
+        f"/api/v1/ai/ingestion/courses/{course.id}/upload",
+        files={"file": ("notes.txt", b"Student notes", "text/plain")},
+        cookies=student_cookie,
+    )
+    assert unauth_upload.status_code == 403
+
+    # 2. Uploading disallowed executable file type -> 422 Unprocessable Entity
+    bad_type = await client.post(
+        f"/api/v1/ai/ingestion/courses/{course.id}/upload",
+        files={"file": ("exploit.exe", b"MZ\x90\x00executable binary content", "application/octet-stream")},
+        cookies=inst_cookie,
+    )
+    assert bad_type.status_code == 422
+    assert "Unsupported file type" in bad_type.json()["error"]["message"]
+
+    # 3. Uploading empty file (0 bytes) -> 422
+    empty_upload = await client.post(
+        f"/api/v1/ai/ingestion/courses/{course.id}/upload",
+        files={"file": ("empty.txt", b"", "text/plain")},
+        cookies=inst_cookie,
+    )
+    assert empty_upload.status_code == 422
+
+    # 4. Uploading corrupt PDF missing %PDF header -> 422
+    fake_pdf = await client.post(
+        f"/api/v1/ai/ingestion/courses/{course.id}/upload",
+        files={"file": ("fake.pdf", b"This is not a real PDF file header", "application/pdf")},
+        cookies=inst_cookie,
+    )
+    assert fake_pdf.status_code == 422
+    assert "%PDF magic header" in fake_pdf.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_configurable_retrieval_limits_and_relevance_thresholds(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Verifies configurable top_k and relevance_threshold parameters in student inquiry."""
+    instructor = await create_user(
+        db_session, "inst.thresh@learnova.ai", SystemRole.INSTRUCTOR.value
+    )
+    student = await create_user(
+        db_session, "student.thresh@learnova.ai", SystemRole.STUDENT.value
+    )
+    course = await setup_course_with_lessons(db_session, instructor)
+
+    enrollment = Enrollment(
+        id=uuid.uuid4(),
+        user_id=student.id,
+        course_id=course.id,
+        status=EnrollmentStatus.ACTIVE.value,
+    )
+    db_session.add(enrollment)
+    await db_session.commit()
+
+    inst_cookie = await get_auth_cookie(client, "inst.thresh@learnova.ai")
+    student_cookie = await get_auth_cookie(client, "student.thresh@learnova.ai")
+
+    # Ingest course lessons
+    await client.post(f"/api/v1/ai/ingestion/courses/{course.id}", cookies=inst_cookie)
+
+    # 1. Query with top_k = 1 -> at most 1 citation returned
+    top1_res = await client.post(
+        "/api/v1/ai/chat",
+        json={
+            "course_id": str(course.id),
+            "message": "Explain CAP theorem and consistency tradeoffs",
+            "top_k": 1,
+            "relevance_threshold": 0.10,
+        },
+        cookies=student_cookie,
+    )
+    assert top1_res.status_code == 200
+    assert len(top1_res.json()["sources"]) == 1
+
+    # 2. Query with ultra-high relevance threshold 0.999 -> drops weaker matches and reports honest uncertainty
+    strict_res = await client.post(
+        "/api/v1/ai/chat",
+        json={
+            "course_id": str(course.id),
+            "message": "Explain CAP theorem and consistency tradeoffs",
+            "relevance_threshold": 0.999,
+        },
+        cookies=student_cookie,
+    )
+    assert strict_res.status_code == 200
+    strict_data = strict_res.json()
+    assert strict_data["is_grounded"] is False
+    assert len(strict_data["sources"]) == 0
+

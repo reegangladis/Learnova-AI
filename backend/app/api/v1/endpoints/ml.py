@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -33,8 +34,17 @@ async def get_course_recommendations(
     current_user: Annotated[User, Depends(get_current_user)],
     ml_service: Annotated[MLService, Depends(get_ml_service)],
     limit: Annotated[int, Query(ge=1, le=20, description="Max recommendations to return")] = 5,
+    goal: Annotated[str | None, Query(description="Declared learning goal or topic")] = None,
+    category_id: Annotated[uuid.UUID | None, Query(description="Filter by specific category")] = None,
+    preferred_difficulty: Annotated[str | None, Query(description="Declared difficulty preference")] = None,
 ) -> APIResponse[CourseRecommendationsResponse]:
-    result = await ml_service.get_recommendations(current_user=current_user, limit=limit)
+    result = await ml_service.get_recommendations(
+        current_user=current_user,
+        limit=limit,
+        goal=goal,
+        category_id=category_id,
+        preferred_difficulty=preferred_difficulty,
+    )
     return APIResponse(
         success=True,
         data=result,

@@ -55,9 +55,14 @@ class MLService:
     # =========================================================================
 
     async def get_recommendations(
-        self, current_user: User, limit: int = 5
+        self,
+        current_user: User,
+        limit: int = 5,
+        goal: str | None = None,
+        category_id: uuid.UUID | None = None,
+        preferred_difficulty: str | None = None,
     ) -> CourseRecommendationsResponse:
-        """Retrieves authorized candidate courses and generates personalized suggestions."""
+        """Retrieves authorized candidate courses and generates personalized suggestions with skill-gap and goal alignment."""
         # 1. Fetch user's enrollments and completion history
         enr_stmt = select(Enrollment).where(Enrollment.user_id == current_user.id)
         enr_res = await self.db.execute(enr_stmt)
@@ -88,7 +93,32 @@ class MLService:
                     completed_category_names.append(c.category.name)
                     completed_category_ids.append(str(c.category.id))
 
-        # 2. Query published courses respecting organization boundaries
+        # 2. Query student's recent finalized quiz attempts to detect skill gaps
+        quiz_stmt = (
+            select(QuizAttempt)
+            .options(selectinload(QuizAttempt.quiz).selectinload(Quiz.course))
+            .where(
+                QuizAttempt.user_id == current_user.id,
+                QuizAttempt.status == AttemptStatus.COMPLETED.value,
+            )
+            .order_by(QuizAttempt.submitted_at.desc())
+            .limit(10)
+        )
+        q_res = await self.db.execute(quiz_stmt)
+        quiz_attempts = list(q_res.scalars().all())
+
+        recent_quiz_scores = [float(att.percentage_score) for att in quiz_attempts]
+        skill_gaps: list[str] = []
+        for att in quiz_attempts:
+            if not att.passed or att.percentage_score < 70.0:
+                if att.quiz and att.quiz.course and att.quiz.course.title:
+                    skill_gaps.append(att.quiz.course.title)
+                if att.quiz and att.quiz.title:
+                    skill_gaps.append(att.quiz.title)
+
+        learning_goals: list[str] = [goal] if goal else []
+
+        # 3. Query published courses respecting organization boundaries
         org_filter = (
             or_(
                 Course.organization_id == current_user.organization_id,
@@ -98,13 +128,17 @@ class MLService:
             else Course.organization_id.is_(None)
         )
 
+        catalog_filters = [
+            Course.status == CourseStatus.PUBLISHED.value,
+            org_filter,
+        ]
+        if category_id:
+            catalog_filters.append(Course.category_id == category_id)
+
         catalog_stmt = (
             select(Course)
             .options(selectinload(Course.category))
-            .where(
-                Course.status == CourseStatus.PUBLISHED.value,
-                org_filter,
-            )
+            .where(*catalog_filters)
         )
         catalog_res = await self.db.execute(catalog_stmt)
         catalog_courses = list(catalog_res.scalars().all())
@@ -121,7 +155,7 @@ class MLService:
                 is_fallback=False,
             )
 
-        # 3. Build candidate payload for ML microservice
+        # 4. Build candidate payload for ML microservice
         candidates_payload = [
             {
                 "id": str(c.id),
@@ -140,6 +174,7 @@ class MLService:
             for c in eligible_courses
         ]
 
+        target_diff = preferred_difficulty or ("intermediate" if completed_course_ids else "beginner")
         student_payload = {
             "student_id": str(current_user.id),
             "enrolled_course_ids": [str(cid) for cid in enrolled_course_ids],
@@ -147,11 +182,13 @@ class MLService:
             "completed_category_ids": completed_category_ids,
             "completed_category_names": completed_category_names,
             "completed_course_titles": completed_titles,
-            "recent_quiz_scores": [],
-            "preferred_difficulty": "intermediate" if completed_course_ids else "beginner",
+            "recent_quiz_scores": recent_quiz_scores,
+            "preferred_difficulty": target_diff,
+            "learning_goals": learning_goals,
+            "skill_gaps": skill_gaps,
         }
 
-        # 4. Attempt calling ML microservice
+        # 5. Attempt calling ML microservice
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:
                 resp = await client.post(
@@ -190,11 +227,14 @@ class MLService:
         except Exception as e:  # noqa: BLE001
             logger.info("ML microservice call failed or unreachable (%s), using local fallback engine.", e)
 
-        # 5. Local Deterministic Fallback Engine
+        # 6. Local Deterministic Fallback Engine
         return self._local_recommendations_fallback(
             eligible_courses=eligible_courses,
             completed_titles=completed_titles,
             completed_category_names=completed_category_names,
+            learning_goals=learning_goals,
+            skill_gaps=skill_gaps,
+            preferred_difficulty=target_diff,
             total_evaluated=len(catalog_courses),
             limit=limit,
         )
@@ -204,11 +244,14 @@ class MLService:
         eligible_courses: list[Course],
         completed_titles: list[str],
         completed_category_names: list[str],
+        learning_goals: list[str],
+        skill_gaps: list[str],
+        preferred_difficulty: str | None,
         total_evaluated: int,
         limit: int,
     ) -> CourseRecommendationsResponse:
-        """Deterministic local fallback when microservice is offline."""
-        has_history = bool(completed_titles or completed_category_names)
+        """Deterministic local fallback with multi-signal ranking when microservice is offline."""
+        has_history = bool(completed_titles or completed_category_names or learning_goals or skill_gaps)
 
         if not has_history:
             # Cold-start popularity / beginner fallback
@@ -241,25 +284,65 @@ class MLService:
                 is_fallback=True,
             )
 
-        # Content and Category matching
+        # Multi-signal scoring
         scored_items: list[tuple[Course, float, str, str]] = []
-        cat_set = set(completed_category_names)
+        cat_set = {name.lower() for name in completed_category_names}
+        completed_titles_lower = [t.lower() for t in completed_titles]
+        goals_lower = [g.lower() for g in learning_goals if g]
+        gaps_lower = [sg.lower() for sg in skill_gaps if sg]
 
         for c in eligible_courses:
             cat_name = c.category.name if c.category else ""
-            is_cat_match = cat_name in cat_set
-            score = 0.50
+            cat_name_lower = cat_name.lower()
+            is_cat_match = cat_name_lower in cat_set
+            cand_text = f"{c.title} {c.short_description} {cat_name} {' '.join(c.learning_objectives or [])}".lower()
 
-            if is_cat_match:
-                score += 0.35
+            # 1. Skill gap remediation match
+            matched_gap = next(
+                (g for g in gaps_lower if g in cand_text or any(len(tok) >= 4 and tok in cand_text for tok in g.split())),
+                None,
+            )
+
+            # 2. Learning goal match
+            matched_goal = next(
+                (g for g in goals_lower if g in cand_text or any(len(tok) >= 4 and tok in cand_text for tok in g.split())),
+                None,
+            )
+
+            # 3. Prerequisite check
+            prereqs = c.prerequisites or []
+            if prereqs:
+                prereqs_met = all(
+                    any(p.lower().strip() in ct or ct in p.lower().strip() for ct in completed_titles_lower)
+                    for p in prereqs
+                )
+                prereq_score = 0.08 if prereqs_met else -0.15
+            else:
+                prereq_score = 0.0
+
+            # Base score
+            base_score = 0.50 + prereq_score
+            if preferred_difficulty and c.difficulty.lower() == preferred_difficulty.lower():
+                base_score += 0.08
+
+            if matched_gap:
+                strategy = "skill_gap_remediation"
+                reason = f"Targeted recommendation to strengthen key concepts in '{matched_gap.capitalize()}' based on your recent assessment results."
+                score = min(0.99, base_score + 0.40)
+            elif matched_goal:
+                strategy = "goal_alignment"
+                reason = f"Directly aligns with your selected learning goal in '{matched_goal.capitalize()}'."
+                score = min(0.98, base_score + 0.30)
+            elif is_cat_match:
                 strategy = "category_matching"
                 reason = f"Expands your knowledge in {cat_name}, matching your completed coursework."
+                score = min(0.95, base_score + 0.25)
             else:
                 strategy = "content_based"
-                reason = "Curriculum recommendation aligned with concepts in your study history."
+                reason = f"Curriculum recommendation in {cat_name or 'the catalog'} aligned with your study pace."
+                score = min(0.85, base_score)
 
-            score = min(0.98, score)
-            scored_items.append((c, round(score, 2), strategy, reason))
+            scored_items.append((c, round(max(0.50, score), 2), strategy, reason))
 
         scored_items.sort(key=lambda x: x[1], reverse=True)
         top_items = scored_items[:limit]
@@ -698,7 +781,8 @@ class MLService:
                             model_name=m["model_name"],
                             version=m["version"],
                             framework=m["framework"],
-                            status=m["status"],
+                            status=m.get("status", "experimental"),
+                            provenance=m.get("provenance", "synthetic_educational_benchmark"),
                             trained_at=datetime.fromisoformat(m["trained_at"]),
                             metrics=ModelEvaluationMetricsDTO(**m["metrics"]) if m.get("metrics") else None,
                             features=m.get("features", []),
@@ -744,6 +828,7 @@ class MLService:
                                     version=jdata.get("version", jf.stem),
                                     framework=jdata.get("framework", "scikit-learn"),
                                     status=jdata.get("status", "experimental"),
+                                    provenance=jdata.get("provenance", "synthetic_educational_benchmark"),
                                     trained_at=trained_dt,
                                     metrics=m_metrics,
                                     features=jdata.get("features", []),
@@ -760,6 +845,7 @@ class MLService:
                     version="v1.0.0",
                     framework="scikit-learn",
                     status="experimental",
+                    provenance="synthetic_educational_benchmark",
                     trained_at=datetime.now(timezone.utc),
                     metrics=None,
                     features=[
@@ -811,6 +897,8 @@ class MLService:
                         ),
                         training_samples=data["training_samples"],
                         test_samples=data["test_samples"],
+                        status=data.get("status", "experimental"),
+                        provenance=data.get("provenance", "synthetic_educational_benchmark"),
                         message=data["message"],
                     )
         except Exception as err:  # noqa: BLE001
@@ -846,6 +934,7 @@ class MLService:
                 success=True,
                 model_name=payload.model_name,
                 version=version,
+                status="experimental",
                 metrics=ModelEvaluationMetricsDTO(
                     accuracy=metrics.accuracy,
                     precision=metrics.precision,
@@ -857,7 +946,8 @@ class MLService:
                 ),
                 training_samples=n_train,
                 test_samples=n_test,
-                message="Model trained, evaluated, and registered successfully via local pipeline.",
+                provenance="synthetic_educational_benchmark",
+                message="Model trained, evaluated, and registered successfully on experimental benchmark distribution.",
             )
         except Exception as local_err:
             logger.error("Local model training failed: %s", local_err)

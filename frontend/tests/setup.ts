@@ -21,3 +21,7 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
+
+// Mock window.scrollTo for jsdom
+window.scrollTo = () => {};
+

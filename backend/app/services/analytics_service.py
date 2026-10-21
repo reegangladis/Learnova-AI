@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.errors import AppExceptions
+from backend.app.models.course import Course
 from backend.app.models.user import User
 from backend.app.repositories.analytics_repo import AnalyticsRepository
 from backend.app.schemas.analytics import (
@@ -156,17 +157,37 @@ class AnalyticsService:
     # ========================================================================
 
     async def get_instructor_overview(
-        self, current_user: User, days: int = 30
+        self,
+        current_user: User,
+        course_id: uuid.UUID | None = None,
+        organization_id: uuid.UUID | None = None,
+        days: int = 30,
     ) -> InstructorOverviewResponse:
-        """Returns analytics strictly isolated to courses owned by the authenticated instructor."""
+        """Returns analytics strictly isolated to courses owned by the authenticated instructor,
+        with optional course_id and organization_id filters."""
         user_roles = {r.upper() for r in current_user.role_names}
         if not user_roles.intersection({"INSTRUCTOR", "ADMIN", "SUPER_ADMIN"}):
             raise AppExceptions.ForbiddenException(
                 message="Access forbidden: Requires INSTRUCTOR, ADMIN, or SUPER_ADMIN role."
             )
 
+        target_org_id = self._get_scoped_org_id(current_user, organization_id)
+
+        if course_id is not None:
+            course = await self.db.get(Course, course_id)
+            if not course:
+                raise AppExceptions.NotFoundException(resource="Course", identifier=str(course_id))
+            if "ADMIN" not in user_roles and "SUPER_ADMIN" not in user_roles:
+                if course.instructor_id != current_user.id:
+                    raise AppExceptions.ForbiddenException(
+                        message="Access forbidden: You can only view analytics for courses you instruct."
+                    )
+
         data = await self.analytics_repo.get_instructor_overview_stats(
-            instructor_id=current_user.id, days=days
+            instructor_id=current_user.id,
+            course_id=course_id,
+            organization_id=target_org_id,
+            days=days,
         )
 
         trends = [InstructorTrendItem(**t) for t in data["trends"]]
@@ -190,11 +211,14 @@ class AnalyticsService:
             average_quiz_score=data["average_quiz_score"],
             quiz_pass_rate=data["quiz_pass_rate"],
             trends=trends,
+            course_id=data.get("course_id"),
+            organization_id=data.get("organization_id"),
         )
 
     async def get_instructor_courses(
         self,
         current_user: User,
+        organization_id: uuid.UUID | None = None,
         page: int = 1,
         page_size: int = 20,
         search: str | None = None,
@@ -206,8 +230,11 @@ class AnalyticsService:
                 message="Access forbidden: Requires INSTRUCTOR, ADMIN, or SUPER_ADMIN role."
             )
 
+        target_org_id = self._get_scoped_org_id(current_user, organization_id)
+
         items_raw, total = await self.analytics_repo.get_instructor_course_comparisons(
             instructor_id=current_user.id,
+            organization_id=target_org_id,
             page=page,
             page_size=page_size,
             search=search,
@@ -235,6 +262,16 @@ class AnalyticsService:
             raise AppExceptions.ForbiddenException(
                 message="Access forbidden: Requires INSTRUCTOR, ADMIN, or SUPER_ADMIN role."
             )
+
+        if course_id is not None:
+            course = await self.db.get(Course, course_id)
+            if not course:
+                raise AppExceptions.NotFoundException(resource="Course", identifier=str(course_id))
+            if "ADMIN" not in user_roles and "SUPER_ADMIN" not in user_roles:
+                if course.instructor_id != current_user.id:
+                    raise AppExceptions.ForbiddenException(
+                        message="Access forbidden: You can only view analytics for courses you instruct."
+                    )
 
         items_raw, total = await self.analytics_repo.get_instructor_assessments_detail(
             instructor_id=current_user.id,

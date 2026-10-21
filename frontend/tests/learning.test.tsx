@@ -378,4 +378,37 @@ describe("Phase 4 Student Learning System & Progress Tracking", () => {
     expect(screen.queryByRole("button", { name: /Edit Metadata/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Curriculum Builder/i })).not.toBeInTheDocument();
   });
+
+  // 8. Video lesson playback and previous/next navigation
+  it("CourseLearningPage displays video player for video content and enables previous/next navigation", async () => {
+    vi.mocked(learningService.getCourseLearningView).mockResolvedValue(mockLearningCourse);
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/learning/courses/:courseId" element={<CourseLearningPage />} />
+      </Routes>,
+      mockStudentUser,
+      "/learning/courses/c-1"
+    );
+
+    // Default active lesson is Lesson 2 (video)
+    expect(await screen.findByTestId("video-lesson-player")).toBeInTheDocument();
+    expect(screen.getByText("Interactive Video Lesson")).toBeInTheDocument();
+
+    // Click Previous Lesson button to navigate to Lesson 1
+    const prevBtn = screen.getByRole("button", { name: /Previous Lesson/i });
+    expect(prevBtn).toBeInTheDocument();
+    fireEvent.click(prevBtn);
+
+    // Now Lesson 1 is active (text lesson)
+    expect(await screen.findByText("Welcome to the interactive TypeScript classroom.")).toBeInTheDocument();
+
+    // Click Next Lesson button to navigate back to Lesson 2
+    const nextBtn = screen.getByRole("button", { name: /Next Lesson/i });
+    expect(nextBtn).toBeInTheDocument();
+    fireEvent.click(nextBtn);
+
+    expect(await screen.findByTestId("video-lesson-player")).toBeInTheDocument();
+  });
 });
+

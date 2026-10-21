@@ -138,3 +138,25 @@ def test_empty_candidates_handling():
 
     assert resp.recommendations == []
     assert resp.total_evaluated == 0
+
+
+def test_recommendation_with_skill_gaps_and_goals(sample_catalog):
+    recommender = CourseRecommender()
+    student = StudentProfile(
+        student_id="std-gap",
+        enrolled_course_ids=[],
+        completed_course_ids=[],
+        learning_goals=["Data Analysis"],
+        skill_gaps=["Typography"],
+    )
+
+    req = RecommendationRequest(student=student, candidate_courses=sample_catalog, limit=3)
+    resp = recommender.recommend(req)
+
+    assert len(resp.recommendations) > 0
+    top_rec = resp.recommendations[0]
+    # Course c-4 is 'Modern Graphic Design' matching the skill gap
+    assert top_rec.course_id == "c-4"
+    assert top_rec.strategy == "skill_gap_remediation"
+    assert "strengthen key concepts" in top_rec.reason.lower()
+

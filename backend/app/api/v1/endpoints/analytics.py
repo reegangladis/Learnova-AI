@@ -109,6 +109,8 @@ async def get_instructor_overview(
         User, Depends(require_role("INSTRUCTOR", "ADMIN", "SUPER_ADMIN"))
     ],
     analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+    course_id: Annotated[uuid.UUID | None, Query(description="Optional course filter")] = None,
+    organization_id: Annotated[uuid.UUID | None, Query(description="Optional organization filter")] = None,
     days: Annotated[int, Query(ge=1, le=365, description="Lookback window in days")] = 30,
 ) -> InstructorOverviewResponse:
     """Calculates enrollment counts, completion rates, lesson progress stats, quiz participation,
@@ -116,7 +118,10 @@ async def get_instructor_overview(
     and assessment pass rates strictly scoped to courses owned by the authenticated instructor.
     """
     return await analytics_service.get_instructor_overview(
-        current_user=current_user, days=days
+        current_user=current_user,
+        course_id=course_id,
+        organization_id=organization_id,
+        days=days,
     )
 
 
@@ -130,6 +135,7 @@ async def get_instructor_courses(
         User, Depends(require_role("INSTRUCTOR", "ADMIN", "SUPER_ADMIN"))
     ],
     analytics_service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+    organization_id: Annotated[uuid.UUID | None, Query(description="Optional organization filter")] = None,
     page: Annotated[int, Query(ge=1, description="Page number")] = 1,
     page_size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 20,
     search: Annotated[str | None, Query(description="Search course title")] = None,
@@ -137,6 +143,7 @@ async def get_instructor_courses(
     """Returns course-by-course enrollment volume, completion rate, lesson count, and average quiz scores."""
     return await analytics_service.get_instructor_courses(
         current_user=current_user,
+        organization_id=organization_id,
         page=page,
         page_size=page_size,
         search=search,

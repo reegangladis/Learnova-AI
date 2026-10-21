@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -64,7 +64,7 @@ class Enrollment(Base, UUIDMixin, TimestampMixin):
 
 
 class LessonProgress(Base, UUIDMixin, TimestampMixin):
-    """Tracks atomic completion progress for a student on a specific lesson."""
+    """Tracks atomic completion progress and video playback for a student on a specific lesson."""
 
     __tablename__ = "lesson_progress"
     __table_args__ = (
@@ -93,11 +93,25 @@ class LessonProgress(Base, UUIDMixin, TimestampMixin):
     )
     is_completed: Mapped[bool] = mapped_column(
         Boolean,
-        default=True,
+        default=False,
         nullable=False,
         index=True,
     )
     completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    playback_position_seconds: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
+    playback_duration_seconds: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
+    last_accessed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
