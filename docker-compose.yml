@@ -4,7 +4,7 @@ services:
   # ============================================================================
   postgres:
     image: postgres:16-alpine
-    container_name: learnova-postgres
+    container_name: excelr-learnova-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -30,7 +30,7 @@ services:
   # ============================================================================
   redis:
     image: redis:7-alpine
-    container_name: learnova-redis
+    container_name: excelr-learnova-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
@@ -47,13 +47,13 @@ services:
       - learnova-network
 
   # ============================================================================
-  # Backend API Service (Optional containerized profile)
+  # ExcelR Learnova Backend API Service
   # ============================================================================
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: learnova-backend
+    container_name: excelr-learnova-backend
     restart: unless-stopped
     profiles: ["app-full"]
     env_file:
@@ -62,8 +62,9 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-learnova_db}
       DATABASE_SYNC_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-learnova_db}
       REDIS_URL: redis://redis:6379/0
-      AI_SERVICE_URL: http://ai-service:8001/api/v1
-      ML_SERVICE_URL: http://ml-service:8002/api/v1
+      TRACK360_BASE_URL: ${TRACK360_BASE_URL:-http://host.docker.internal:8000}
+      TRACK360_SERVICE_EMAIL: ${TRACK360_SERVICE_EMAIL:-admin@excelr.com}
+      TRACK360_SERVICE_PASSWORD: ${TRACK360_SERVICE_PASSWORD:-Admin@Track360_2026!}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -75,62 +76,13 @@ services:
       - learnova-network
 
   # ============================================================================
-  # AI Service (Optional containerized profile)
-  # ============================================================================
-  ai-service:
-    build:
-      context: ./ai-service
-      dockerfile: Dockerfile
-    container_name: learnova-ai-service
-    restart: unless-stopped
-    profiles: ["app-full"]
-    env_file:
-      - .env
-    environment:
-      REDIS_URL: redis://redis:6379/0
-    ports:
-      - "${AI_SERVICE_PORT:-8001}:8001"
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - learnova-network
-
-  # ============================================================================
-  # ML Service (Optional containerized profile)
-  # ============================================================================
-  ml-service:
-    build:
-      context: ./ml-service
-      dockerfile: Dockerfile
-    container_name: learnova-ml-service
-    restart: unless-stopped
-    profiles: ["app-full"]
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-learnova_db}
-      REDIS_URL: redis://redis:6379/0
-    ports:
-      - "${ML_SERVICE_PORT:-8002}:8002"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - ml_models_data:/app/app/models/registry
-    networks:
-      - learnova-network
-
-  # ============================================================================
-  # Frontend Application (Optional containerized profile)
+  # ExcelR Learnova Frontend Application
   # ============================================================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: learnova-frontend
+    container_name: excelr-learnova-frontend
     restart: unless-stopped
     profiles: ["app-full"]
     ports:
@@ -150,8 +102,6 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
-    driver: local
-  ml_models_data:
     driver: local
 
 networks:

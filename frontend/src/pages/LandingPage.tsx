@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import {
-  Sparkles,
-  BrainCircuit,
+  Award,
+  Users,
   Database,
   ArrowRight,
   Server,
   Layers,
   CheckCircle2,
   GraduationCap,
+  FolderKanban,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
@@ -20,28 +21,28 @@ export function LandingPage() {
 
   const features = [
     {
-      icon: Sparkles,
-      title: "RAG Course Knowledge Assistant",
+      icon: Users,
+      title: "Authoritative Learner Master",
       description:
-        "Context-aware AI tutor answering domain-specific inquiries directly from indexed course syllabi, lecture transcripts, and reading materials.",
-      tag: "AI Service",
+        "Single golden profile per candidate synchronized with ExcelR Track360, preventing duplicate identities across course enrollments.",
+      tag: "Track360 Sync",
+      variant: "default" as const,
+    },
+    {
+      icon: FolderKanban,
+      title: "SLA-Driven Project Allocation",
+      description:
+        "Real-time allocation queue with 15 business-day SLA enforcement, group allocation workflows, and mandatory drop justifications.",
+      tag: "15d SLA Queue",
       variant: "ai" as const,
     },
     {
-      icon: BrainCircuit,
-      title: "Predictive Student Analytics",
+      icon: Award,
+      title: "Two-Stage Verified Certification",
       description:
-        "Machine Learning engines detecting dropout risks, engagement trends, and personalizing adaptive study paths before assessments.",
-      tag: "ML Service",
+        "Authoritative 3, 6, and 9-month internship certificate duration calculations, coordinator & manager approvals, and QR-verifiable credentials.",
+      tag: "Verified Credentials",
       variant: "ml" as const,
-    },
-    {
-      icon: Database,
-      title: "Enterprise LMS Foundation",
-      description:
-        "Robust, scalable PostgreSQL database schema, async SQLAlchemy 2.0 ORM, and high-performance Redis caching infrastructure.",
-      tag: "PostgreSQL & Redis",
-      variant: "default" as const,
     },
   ];
 
@@ -49,38 +50,38 @@ export function LandingPage() {
     <div className="space-y-16 pb-12">
       {/* Hero Section */}
       <section className="text-center pt-8 pb-12 md:py-16 space-y-6 max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+        <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/5 px-4 py-1.5 text-xs font-medium text-indigo-400">
           <span className={`h-2 w-2 rounded-full ${isHealthy ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
-          <span>Foundation & Architecture (Phase 1) Active</span>
-          <Badge variant="outline" className="text-[10px] py-0 border-primary/30">
-            v0.1.0
+          <span>ExcelR Track360 Integrated Ecosystem</span>
+          <Badge variant="outline" className="text-[10px] py-0 border-indigo-500/30">
+            v1.0-ExcelR
           </Badge>
         </div>
 
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl text-foreground">
-          Learn Smarter. Learn Personally. <br />
-          <span className="bg-gradient-to-r from-primary via-purple-600 to-cyan-500 bg-clip-text text-transparent">
-            Learn with AI.
+          ExcelR Learnova <br />
+          <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 bg-clip-text text-transparent">
+            Learning &amp; Progress Platform
           </span>
         </h1>
 
         <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Learnova AI is a next-generation Learning Management System uniting traditional course orchestration,
-          real-time RAG tutoring, and ML student performance prediction.
+          The enterprise LMS for ExcelR: delivering structured course curriculum, interactive modules, and synchronized
+          real-time operational progress tracking with ExcelR Track360.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <Link to="/dashboard">
-            <Button size="lg" className="gap-2 shadow-md">
+            <Button size="lg" className="gap-2 shadow-md bg-indigo-600 hover:bg-indigo-700">
               <GraduationCap className="h-5 w-5" />
               <span>Enter Learning Platform</span>
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <Link to="/status">
+          <Link to="/integration-health">
             <Button variant="outline" size="lg" className="gap-2">
               <Server className="h-4 w-4 text-emerald-500" />
-              <span>Live System Health</span>
+              <span>Track360 Bridge Health</span>
             </Button>
           </Link>
         </div>
@@ -90,10 +91,10 @@ export function LandingPage() {
       <section className="space-y-6">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold tracking-tight text-foreground">
-            Modular Microservices Architecture
+            Core Integration Architecture
           </h2>
           <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-            Engineered with clear separation of concerns, high maintainability, and horizontal scalability.
+            Learnova delivers the rich learning experience while ExcelR Track360 provides the authoritative operational records.
           </p>
         </div>
 
@@ -101,10 +102,10 @@ export function LandingPage() {
           {features.map((feat, index) => {
             const Icon = feat.icon;
             return (
-              <Card key={index} className="hover:shadow-md transition-all">
+              <Card key={index} className="hover:shadow-md transition-all border-border/80">
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                    <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
                       <Icon className="h-6 w-6" />
                     </div>
                     <Badge variant={feat.variant}>{feat.tag}</Badge>
@@ -143,7 +144,7 @@ export function LandingPage() {
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                <span>Dedicated AI & ML microservices with decoupled inference contracts</span>
+                <span>ExcelR Track360 Client integration with deterministic fallback</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
@@ -154,24 +155,24 @@ export function LandingPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-xl border border-border bg-muted/40 p-5 space-y-2">
-              <Server className="h-5 w-5 text-primary" />
-              <h4 className="font-semibold text-sm">FastAPI Backend</h4>
-              <p className="text-xs text-muted-foreground">Port 8000 • Async API Router</p>
+              <Server className="h-5 w-5 text-indigo-400" />
+              <h4 className="font-semibold text-sm">Learnova Core</h4>
+              <p className="text-xs text-muted-foreground">Port 8000 • Learning API</p>
             </div>
             <div className="rounded-xl border border-border bg-muted/40 p-5 space-y-2">
-              <Layers className="h-5 w-5 text-purple-500" />
-              <h4 className="font-semibold text-sm">AI Tutor Service</h4>
-              <p className="text-xs text-muted-foreground">Port 8001 • RAG & LLM Ready</p>
+              <Layers className="h-5 w-5 text-purple-400" />
+              <h4 className="font-semibold text-sm">Track360 Bridge</h4>
+              <p className="text-xs text-muted-foreground">Port 8001/HTTP • Operational Master</p>
             </div>
             <div className="rounded-xl border border-border bg-muted/40 p-5 space-y-2">
-              <BrainCircuit className="h-5 w-5 text-cyan-500" />
-              <h4 className="font-semibold text-sm">ML Analytics</h4>
-              <p className="text-xs text-muted-foreground">Port 8002 • MLflow Ready</p>
+              <Award className="h-5 w-5 text-sky-400" />
+              <h4 className="font-semibold text-sm">Credentials & SLA</h4>
+              <p className="text-xs text-muted-foreground">2-Stage Signoff • 15d SLA</p>
             </div>
             <div className="rounded-xl border border-border bg-muted/40 p-5 space-y-2">
               <Database className="h-5 w-5 text-emerald-500" />
               <h4 className="font-semibold text-sm">Postgres & Redis</h4>
-              <p className="text-xs text-muted-foreground">Dockerized Persistence</p>
+              <p className="text-xs text-muted-foreground">Persistent Learning Store</p>
             </div>
           </div>
         </div>

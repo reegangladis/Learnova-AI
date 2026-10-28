@@ -64,7 +64,7 @@ export function LoginPage() {
           Welcome back
         </h1>
         <p className="text-slate-400 text-sm mt-1">
-          Sign in to continue your personalized learning journey
+          ExcelR Learnova — Learning &amp; Progress Platform
         </p>
       </div>
 
@@ -93,7 +93,7 @@ export function LoginPage() {
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@learnova.ai"
+            placeholder="staff@excelr.com"
             {...register("email")}
             className="w-full px-4 py-3 bg-slate-800/80 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
           />

@@ -56,7 +56,7 @@ export function Navbar({ onOpenMobileMenu }: NavbarProps) {
           <Menu className="h-5 w-5" />
         </Button>
 
-        <div className="hidden sm:flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-3">
           <Link
             to="/status"
             className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -69,6 +69,19 @@ export function Navbar({ onOpenMobileMenu }: NavbarProps) {
             <span>System:</span>
             <Badge variant={isHealthy ? "success" : "warning"} className="text-[10px] py-0">
               {isHealthy ? "Operational" : "Checking..."}
+            </Badge>
+          </Link>
+
+          <span className="text-muted-foreground/40">•</span>
+
+          <Link
+            to="/integration-health"
+            className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+            <span>Track360:</span>
+            <Badge variant="outline" className="text-[10px] py-0 border-indigo-500/40 text-indigo-400">
+              Synced
             </Badge>
           </Link>
         </div>

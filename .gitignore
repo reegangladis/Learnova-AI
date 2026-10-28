@@ -74,6 +74,7 @@ pgdata/
 redisdata/
 mlruns/
 .mlflow/
+ml-service/app/models/registry/
 
 # Backups
 infrastructure/backups/*
@@ -85,4 +86,5 @@ infrastructure/backups/*
 *.db
 *.sqlite
 *.sqlite3
+*.pkl
 scratch/

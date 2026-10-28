@@ -12,11 +12,13 @@ import {
   Tag,
   PlusCircle,
   ShieldCheck,
-  Sparkles,
-  BrainCircuit,
   HelpCircle,
   BarChart3,
   TrendingUp,
+  FolderKanban,
+  Award,
+  Server,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
@@ -33,7 +35,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navigation = [
     {
-      title: "Core Platform",
+      title: "Learning Platform",
       items: [
         { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
         ...(isAuthenticated
@@ -43,9 +45,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ]
           : []),
         { name: "Courses Catalog", href: "/courses", icon: BookOpen },
-        { name: "Landing Showcase", href: "/", icon: Home },
+        { name: "Showcase Landing", href: "/", icon: Home },
       ],
     },
+    ...(isAuthenticated
+      ? [
+          {
+            title: "ExcelR Operations (Track360)",
+            items: [
+              { name: "Learners Master", href: "/learners", icon: Users, badge: "Master" },
+              { name: "Assignments", href: "/assignments", icon: CheckSquare, badge: "Grading" },
+              { name: "Projects & SLA", href: "/projects", icon: FolderKanban, badge: "15d SLA" },
+              { name: "Certificates", href: "/certificates", icon: Award, badge: "2-Stage" },
+              { name: "Operational Reports", href: "/reports", icon: BarChart3, badge: "Sync" },
+            ],
+          },
+        ]
+      : []),
     ...(isAuthenticated && hasRole("INSTRUCTOR", "ADMIN", "SUPER_ADMIN")
       ? [
           {
@@ -59,10 +75,29 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           },
         ]
       : []),
+    ...(isAuthenticated && hasRole("ADMIN", "SUPER_ADMIN")
+      ? [
+          {
+            title: "Administration",
+            items: [
+              { name: "User Management", href: "/admin/users", icon: Users, badge: "RBAC" },
+              { name: "Admin Analytics", href: "/admin/analytics", icon: BarChart3, badge: "Metrics" },
+              { name: "Course Categories", href: "/admin/categories", icon: Tag },
+            ],
+          },
+        ]
+      : []),
+    {
+      title: "System & Integration",
+      items: [
+        { name: "Track360 Integration", href: "/integration-health", icon: Activity, badge: "Live" },
+        { name: "System Services", href: "/status", icon: Server },
+      ],
+    },
     ...(isAuthenticated
       ? [
           {
-            title: "Identity & Account",
+            title: "Identity & Security",
             items: [
               { name: "My Profile", href: "/profile", icon: User },
               { name: "Security & Sessions", href: "/security", icon: Key },
@@ -70,24 +105,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           },
         ]
       : []),
-    ...(isAuthenticated && hasRole("ADMIN", "SUPER_ADMIN")
-      ? [
-          {
-            title: "Administration",
-            items: [
-              { name: "Admin Analytics", href: "/admin/analytics", icon: BarChart3, badge: "Metrics" },
-              { name: "User Management", href: "/admin/users", icon: Users, badge: "RBAC" },
-              { name: "Course Categories", href: "/admin/categories", icon: Tag },
-            ],
-          },
-        ]
-      : []),
-    {
-      title: "AI & ML Architecture",
-      items: [
-        { name: "System & Service Status", href: "/status", icon: Activity, badge: "Live" },
-      ],
-    },
   ];
 
   return (
@@ -114,10 +131,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
           <div>
             <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-1.5">
-              Learnova <span className="text-primary font-black">AI</span>
+              ExcelR <span className="text-primary font-black">Learnova</span>
             </span>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
-              Next-Gen LMS
+              Learning &amp; Progress
             </p>
           </div>
         </div>
@@ -189,14 +206,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-                Phase 2 Auth & RBAC
+                Track360 Synced
               </span>
-              <span className="text-[10px] text-muted-foreground font-mono">v0.2.0</span>
+              <span className="text-[10px] text-muted-foreground font-mono">v1.0-ExcelR</span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-purple-500"/> AI Engine</span>
+              <span>Operational Master</span>
               <span>•</span>
-              <span className="flex items-center gap-1"><BrainCircuit className="h-3 w-3 text-cyan-500"/> ML Engine</span>
+              <span className="text-emerald-500 font-medium">Authoritative</span>
             </div>
           </div>
         </div>

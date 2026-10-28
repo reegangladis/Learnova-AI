@@ -12,7 +12,13 @@ class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
     # App Identity
-    APP_NAME: str = Field(default="Learnova AI", description="Application name")
+    APP_NAME: str = Field(
+        default="ExcelR Learnova", description="Application name"
+    )
+    APP_SUBTITLE: str = Field(
+        default="Learning & Progress Platform",
+        description="Platform subtitle",
+    )
     APP_ENV: str = Field(
         default="development",
         description="Runtime environment: development, staging, production",
@@ -143,7 +149,29 @@ class Settings(BaseSettings):
         default=60, description="Default auth endpoint window in seconds"
     )
 
-    # Future AI / ML Service Endpoints
+    # ExcelR Track360 Integration Configuration
+    TRACK360_BASE_URL: str = Field(
+        default="http://localhost:8001",
+        description="Base URL for ExcelR Track360 authoritative API",
+    )
+    TRACK360_SERVICE_EMAIL: str = Field(
+        default="admin@excelr.com",
+        description="Service account email for Track360 API authentication",
+    )
+    TRACK360_SERVICE_PASSWORD: str = Field(
+        default="Admin@Track360_2026!",
+        description="Service account password for Track360 API authentication",
+    )
+    TRACK360_TIMEOUT_SECONDS: float = Field(
+        default=5.0,
+        description="Timeout in seconds for external Track360 API calls",
+    )
+    TRACK360_MOCK_FALLBACK: bool = Field(
+        default=True,
+        description="Allow deterministic mock fallback in development when Track360 is offline",
+    )
+
+    # Future AI / ML Service Endpoints (Legacy / Disabled)
     AI_SERVICE_URL: str = Field(
         default="http://localhost:8001/api/v1", description="AI service base URL"
     )

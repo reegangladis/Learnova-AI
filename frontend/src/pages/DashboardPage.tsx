@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { ExcelRDashboard } from "@/components/dashboard/ExcelRDashboard";
 import { StudentAnalyticsDashboard } from "@/pages/StudentAnalyticsDashboard";
 import { InstructorAnalyticsDashboard } from "@/pages/InstructorAnalyticsDashboard";
 import { AdminAnalyticsDashboard } from "@/pages/AdminAnalyticsDashboard";
@@ -79,7 +80,10 @@ export function DashboardPage() {
 
       {/* Render Active Dashboard */}
       {activeView === "admin" && canViewAdmin ? (
-        <AdminAnalyticsDashboard />
+        <div className="space-y-8">
+          <ExcelRDashboard />
+          <AdminAnalyticsDashboard />
+        </div>
       ) : activeView === "instructor" && canViewInstructor ? (
         <InstructorAnalyticsDashboard />
       ) : (

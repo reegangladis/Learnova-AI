@@ -39,11 +39,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_application() -> FastAPI:
     """FastAPI application factory."""
     app = FastAPI(
-        title=f"{settings.APP_NAME} - Backend API",
+        title=f"{settings.APP_NAME} — {settings.APP_SUBTITLE}",
         version=settings.APP_VERSION,
         description=(
-            "Production-grade Backend API for Learnova AI - "
-            "Learn Smarter. Learn Personally. Learn with AI."
+            "Enterprise Backend API for ExcelR Learnova — "
+            "Learning & Progress Platform integrated with ExcelR Track360."
         ),
         docs_url="/docs",
         redoc_url="/redoc",

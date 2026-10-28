@@ -30,6 +30,13 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import { StudentAnalyticsDashboard } from "@/pages/StudentAnalyticsDashboard";
 import { InstructorAnalyticsDashboard } from "@/pages/InstructorAnalyticsDashboard";
 import { AdminAnalyticsDashboard } from "@/pages/AdminAnalyticsDashboard";
+import { LearnersPage } from "@/pages/LearnersPage";
+import { LearnerProfilePage } from "@/pages/LearnerProfilePage";
+import { AssignmentsPage } from "@/pages/AssignmentsPage";
+import { ProjectsPage } from "@/pages/ProjectsPage";
+import { CertificatesPage } from "@/pages/CertificatesPage";
+import { ReportsPage } from "@/pages/ReportsPage";
+import { IntegrationHealthPage } from "@/pages/IntegrationHealthPage";
 import { ProtectedRoute, RoleProtectedRoute } from "@/routes/RouteGuards";
 
 export function AppRoutes() {
@@ -54,6 +61,56 @@ export function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        {/* ExcelR Track360 Operational Pages */}
+        <Route
+          path="/learners"
+          element={
+            <ProtectedRoute>
+              <LearnersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/learners/:candidateId"
+          element={
+            <ProtectedRoute>
+              <LearnerProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assignments"
+          element={
+            <ProtectedRoute>
+              <AssignmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/certificates"
+          element={
+            <ProtectedRoute>
+              <CertificatesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/integration-health" element={<IntegrationHealthPage />} />
         <Route
           path="/profile"
           element={

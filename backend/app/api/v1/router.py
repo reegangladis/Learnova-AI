@@ -12,6 +12,7 @@ from backend.app.api.v1.endpoints import (
     ml,
     quizzes,
     system,
+    track360,
     users,
 )
 
@@ -31,6 +32,7 @@ api_router.include_router(learning.router)
 api_router.include_router(quizzes.router)
 api_router.include_router(quizzes.attempts_router)
 api_router.include_router(analytics.router)
+api_router.include_router(track360.router, tags=["ExcelR Track360 Integration"])
 api_router.include_router(ai.router)
 api_router.include_router(ml.router)
 
