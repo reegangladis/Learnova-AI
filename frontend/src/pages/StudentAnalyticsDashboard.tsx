@@ -94,10 +94,10 @@ export const StudentAnalyticsDashboard: React.FC = () => {
                 </span>
               </div>
               <h4 className="text-xs sm:text-sm font-bold text-white leading-snug">
-                FEEDBACK-International Business-July-26-(Week-07)
+                Kubernetes Production Ingress & Storage Exam
               </h4>
               <p className="text-[11px] text-slate-400">
-                26VMC0C101 · 21 Nov, 23:00
+                Full-Stack Cloud & DevOps · 21 Nov, 23:00
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
