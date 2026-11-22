@@ -1,346 +1,254 @@
-# LEARNOVA AI
+# 🎓 LEARNOVA AI
 
-> **"Learn Smarter. Learn Personally. Learn with AI."**
+<div align="center">
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![React 18](https://img.shields.io/badge/React-18-61DAFB.svg)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-3178C6.svg)](https://www.typescriptlang.org)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-336791.svg)](https://www.postgresql.org)
-[![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io)
+```
+  _                                            
+ | |    ___  __ _ _ __ _ __   _____   ____ _   
+ | |   / _ \/ _` | '__| '_ \ / _ \ \ / / _` |  
+ | |__|  __/ (_| | |  | | | | (_) \ V / (_| |  
+ |_____\___|\__,_|_|  |_| |_|\___/ \_/ \__,_|  
+              INTELLIGENT LMS PLATFORM         
+```
 
-Learnova AI is an enterprise, production-grade Learning Management System (LMS) engineered to merge traditional learning workflows with real-time AI tutoring, RAG-powered course knowledge retrieval, and machine learning-driven student performance analytics and personalization.
+**"Learn Beyond Borders. Empowering Next-Generation Engineering Leaders."**
+
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React 18](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
+[![Vitest](https://img.shields.io/badge/Tests-69%2F69%20Passing-success?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+[Live Features](#-key-features) • [Course Catalog](#-seeded-course-catalog) • [Demo Credentials](#-demo-personas--credentials) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [API Specs](#-api-documentation)
+
+</div>
 
 ---
 
-## 1. Project Overview
+## 🌟 Executive Summary
 
-Learnova AI addresses the limitations of legacy LMS platforms by providing:
-- **Scalable LMS Core**: Course management, modular curriculum builders, granular role-based access, and student progress tracking.
-- **RAG-Powered AI Knowledge Assistant**: Multi-modal document ingestion, semantic search, and context-aware course tutoring.
-- **Machine Learning Student Analytics**: Predictive modeling for student engagement, churn risk detection, and automated learning path recommendations.
-- **Enterprise-Grade Architecture**: Fully decoupled microservices, asynchronous execution pools, centralized configuration, and structured observability.
+**Learnova** is an enterprise-grade, modern Learning Management System (LMS) designed for cutting-edge engineering disciplines. It blends a sophisticated dark glassmorphic design system (`#0B0F19`) with interactive multi-format course delivery:
+
+* 📑 **Interactive Slide Decks (PPT)**: Slide-by-slide in-browser presentation viewer with notes and download actions.
+* 🎬 **HD Video Lectures**: Embedded streaming lectures with multi-speed controls and progress checkpoints.
+* 📝 **Real-Time Quizzes & Self-Assessments**: Timed multi-question exams, instant feedback, and attempt retrospectives.
+* 🛡️ **Role-Based Access Control (RBAC)**: Tailored navigation for Students, Instructors, and Administrators. *ExcelR Operations (Track360)* is exclusively reserved for staff and hidden from student views.
+* 📅 **Dynamic Academic Calendar**: Interactive Month, Week, Day, and Upcoming views with course-level filtering.
 
 ---
 
-## 2. System Architecture
+## 🔑 Demo Personas & Credentials
+
+For fast evaluation, development mode includes single-click autofill buttons on the login page:
+
+| Persona | Role | Email | Password | Access Highlights |
+|---|---|---|---|---|
+| **Student** | `STUDENT` | `student@learnova.ai` | `Student123!` | Enrolled courses, PPT viewer, quizzes, clean focused navigation (Track360 hidden) |
+| **Instructor** | `INSTRUCTOR` | `instructor@learnova.ai` | `Instructor123!` | Course builder, quiz authoring, student gradebook, ExcelR Track360 operations |
+| **Admin** | `ADMIN` | `admin@learnova.ai` | `Admin123!` | User management, security audit logs, platform analytics, Track360 management |
+| **Super Admin** | `SUPER_ADMIN` | `superadmin@learnova.ai` | `SuperAdmin123!` | Global organization settings, full role assignments, database maintenance |
+
+---
+
+## 🚀 Key Features
+
+### 1. 🎨 Original Modern UI & Theme
+- Built from the ground up with a dark obsidian/slate canvas (`#0B0F19`), glowing indigo/violet ambient lights, and glassmorphic card containers.
+- **Standalone Full-Screen Hero**: Clean "Learn Beyond Borders" landing page with a 3-column capsule gallery of diverse engineering learners.
+- **Learnova AI Copilot**: Quick-access AI assistant pill button directly accessible from the navigation bar.
+
+### 2. 📑 Multi-Format Course Learning Engine
+- **Presentation Decks (PPT)**: Slide-by-slide interactive presentation viewer with progress counters, slide summaries, and download triggers.
+- **Video & Markdown Lessons**: Native video streaming player with automatic completion tracking.
+- **Self-Assessments**: Low-stakes knowledge checks throughout modules with detailed explanations.
+- **Graded Quizzes**: Multi-choice, single-select, and true/false assessment builder with real-time timers and instant scoring.
+
+### 3. 📅 Interactive Academic Calendar
+- **4 Switchable Views**: Month (calendar grid), Week (7-day timeline), Day (daily schedule), and Upcoming (chronological list).
+- **Dynamic Course Filtering**: Filter the entire schedule by individual course or view all combined milestones.
+- **Color-Coded Badges**: Deadlines (red), Course modules (blue), Live workshops (purple), and Self-assessments (green).
+
+### 4. 🏢 ExcelR Operations (Track360)
+- Enterprise operations suite featuring **Learner Management**, **Assignments**, **Projects**, **Certificates**, and **Integration Health**.
+- **Student Privacy & Isolation**: Protected by route guards and navigation filters—hidden from learners, active for instructors and administrators.
+
+---
+
+## 📚 Seeded Course Catalog
+
+Learnova comes pre-seeded with 4 comprehensive enterprise curricula:
+
+```
+├── 1. Full-Stack Cloud & DevOps Engineering (cloud-devops)
+│   ├── Module 1: Container Architecture & Dockerfile Optimization
+│   │   ├── Lesson: Linux Namespaces & Cgroups (Text)
+│   │   ├── Lesson: High-Performance Dockerfile Build Patterns (Video)
+│   │   └── Lesson: Container Optimization & Distroless Images (PPT Deck - 6 Slides)
+│   ├── Module 2: Kubernetes Orchestration & Cluster Management
+│   │   ├── Lesson: Pod Networking & CNI Plugins (Text)
+│   │   └── Lesson: Kubernetes Cluster Deployment & Helm (Video)
+│   ├── Quiz: Cloud & Containers Competency Check
+│   └── Exam: Kubernetes Ingress & Storage Exam
+│
+├── 2. Enterprise AI Engineering & Large Language Models (ai-data-science)
+│   ├── Module 1: Modern Transformer Mechanics & Attention
+│   │   ├── Lesson: Scaled Dot-Product & Multi-Head Attention (Text)
+│   │   ├── Lesson: Tokenization, Embeddings & Positional Encodings (Video)
+│   │   └── Lesson: Transformer Architecture Visualized (PPT Deck - 6 Slides)
+│   ├── Module 2: Retrieval Augmented Generation (RAG) Architecture
+│   │   ├── Lesson: Vector Database Embeddings & Chunking (Text)
+│   │   └── Lesson: Production RAG Pipelines with LangChain (Video)
+│   ├── Quiz: Transformer Attention Mechanics Checkpoint
+│   └── Exam: Enterprise RAG & Vector Systems Exam
+│
+├── 3. Advanced Python & Distributed Data Systems (software-engineering)
+│   ├── Module 1: Python Concurrency, GIL & Asyncio Architecture
+│   │   ├── Lesson: CPython Memory Management & GIL (Text)
+│   │   ├── Lesson: Event Loop Internals & Asyncio Best Practices (Video)
+│   │   └── Lesson: High-Performance Python & Concurrency (PPT Deck - 6 Slides)
+│   ├── Module 2: Distributed Data Processing with PySpark & Kafka
+│   │   ├── Lesson: Apache Spark Execution Plans & RDDs (Text)
+│   │   └── Lesson: Streaming Data Pipelines with Kafka & Spark (Video)
+│   ├── Quiz: Python Internals & Memory Management Quiz
+│   └── Exam: PySpark Cluster Computing Exam
+│
+└── 4. Enterprise Cybersecurity & Zero Trust Systems (cybersecurity)
+    ├── Module 1: Zero Trust Network Architecture & Identity Verification
+    │   ├── Lesson: BeyondCorp Principles & Perimeterless Security (Text)
+    │   ├── Lesson: mTLS Authentication & SPIFFE/SPIRE (Video)
+    │   └── Lesson: Zero Trust Architecture Playbook (PPT Deck - 6 Slides)
+    ├── Module 2: Cloud Attack Vectors & Incident Response Operations
+    │   ├── Lesson: Cloud Control Plane Exploits & Misconfigurations (Text)
+    │   └── Lesson: Threat Hunting & SIEM Alert Triaging (Video)
+    ├── Quiz: Zero Trust & mTLS Knowledge Check
+    └── Exam: Cloud Security Incident Response Exam
+```
+
+---
+
+## 🏗️ Architecture
 
 ```mermaid
 graph TD
-    Client[Web Client - React / TS / Vite]
+    User([Browser Client]) -->|HTTP / WebSocket| Gateway[Learnova Frontend :5173]
     
-    subgraph Infrastructure Layer
-        Nginx[Nginx Reverse Proxy / Gateway]
+    subgraph Frontend Tier
+        Gateway --> Router[React Router v6]
+        Router --> RBAC[Role-Based Guards]
+        RBAC --> Pages[Dashboard / Courses / PPT Viewer / Calendar / Quizzes]
     end
+
+    Gateway -->|REST API Requests| Backend[FastAPI Backend :8000]
 
     subgraph Service Tier
-        Backend[Learnova Backend - FastAPI :8000]
-        AIService[Learnova AI Service - FastAPI :8001]
-        MLService[Learnova ML Service - FastAPI :8002]
+        Backend --> AuthModule[Auth & JWT Session Engine]
+        Backend --> CourseModule[Course & Curriculum Engine]
+        Backend --> QuizModule[Quiz & Assessment Scoring]
+        Backend --> Track360[ExcelR Operations Track360]
     end
 
-    subgraph Data & Caching Tier
-        Postgres[(PostgreSQL 16+ - Port 5432)]
-        RedisCache[(Redis 7+ - Port 6379)]
-        VectorDB[(Vector DB / pgvector)]
-        ModelRegistry[(Model Registry / MLflow)]
+    subgraph Persistence Layer
+        Backend --> SQLite[(SQLite / PostgreSQL Database)]
+        Backend --> Cache[(Redis Cache Layer)]
     end
-
-    Client -->|HTTP / WebSocket| Nginx
-    Nginx -->|/api/v1/*| Backend
-    Nginx -->|/api/v1/ai/*| AIService
-    Nginx -->|/api/v1/ml/*| MLService
-
-    Backend -->|Async SQLAlchemy / asyncpg| Postgres
-    Backend -->|Async Cache / redis-py| RedisCache
-    Backend -->|Internal REST| AIService
-    Backend -->|Internal REST| MLService
-
-    AIService -->|Vector Search| VectorDB
-    MLService -->|Inference & Metadata| ModelRegistry
 ```
-
-For detailed architectural principles, design patterns, and layer responsibilities, consult [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
-## 3. Technology Stack
+## ⚡ Quick Start
 
-### Frontend
-- **Framework**: React 18 with Vite
-- **Language**: Strict TypeScript (no loose typing or plain JS)
-- **Styling**: Tailwind CSS & CSS Variables
-- **UI Components**: Accessible shadcn/ui design patterns & Lucide icons
-- **Server State**: TanStack Query (React Query)
-- **Forms & Validation**: React Hook Form + Zod
-- **Data Visualization**: Recharts
-- **Testing**: Vitest + React Testing Library
+### 1. Prerequisites
+- **Python**: `3.11+`
+- **Node.js**: `18.x+` (with `npm 9+`)
+- **Git**
 
-### Backend Core
-- **Framework**: FastAPI (Python 3.11+)
-- **ORM & Migrations**: SQLAlchemy 2.0 (Async) + Alembic
-- **Database Driver**: `asyncpg` (Async) & `psycopg2-binary` (Sync migrations)
-- **Validation**: Pydantic v2 & `pydantic-settings`
-- **Caching & Sessions**: Redis (`redis.asyncio`)
-- **Logging**: Structured JSON Logging with request duration, tracing, and credential redaction
-- **Testing**: Pytest + `pytest-asyncio` + `httpx`
+### 2. Clone the Repository
+```bash
+git clone https://github.com/reegangladis/Learnova-AI.git
+cd Learnova-AI
+```
 
-### AI Microservice
-- **Framework**: FastAPI + Pydantic v2
-- **Abstractions**: LLM Provider Factory, Text Chunking, Embeddings Pipeline, Vector Retrieval
-- **Services**: AI Tutor, Automated Quiz Synthesis, Assignment Evaluation
+### 3. Setup Backend
+```bash
+# Create and activate virtual environment
+python -m venv .venv
 
-### ML Microservice
-- **Framework**: FastAPI + Pandas + NumPy + Scikit-learn
-- **Abstractions**: Dataset Loaders, Feature Engineering Pipelines, Model Registry, Inference Predictor, Evaluation Metrics
-- **MLOps**: MLflow-ready model lifecycle architecture
+# Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# macOS / Linux:
+# source .venv/bin/activate
 
-### Infrastructure & DevOps
-- **Containerization**: Docker & Docker Compose
-- **Web Server / Gateway**: Nginx
-- **Database**: PostgreSQL 16+ with persistent volumes
-- **Cache**: Redis 7+ with in-memory persistence
+# Install dependencies
+pip install -r backend/requirements.txt
+
+# Run backend server
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+*Backend API will run at: `http://127.0.0.1:8000` (Swagger UI at `/docs`)*
+
+### 4. Setup Frontend
+```bash
+cd frontend
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+*Frontend will run at: `http://127.0.0.1:5173`*
 
 ---
 
-## 4. Repository Structure
+## 🧪 Testing & Verification
+
+The project is backed by comprehensive automated test suites:
+
+```bash
+# Run Frontend Vitest Suite (11 test files, 69 unit/integration tests)
+cd frontend
+npm test
+
+# Run Production Frontend Build
+npm run build
+
+# Run Backend Pytest Suite
+pytest backend/tests/ -v
+```
+
+---
+
+## 📁 Repository Structure
 
 ```
-learnova-ai/
-├── frontend/                   # React + TypeScript Frontend Application
+Learnova-AI/
+├── frontend/                   # React 18 + Vite + TypeScript Client
 │   ├── src/
-│   │   ├── components/         # Reusable UI & Layout Components (shadcn/ui style)
-│   │   ├── pages/              # Route Pages (Landing, Dashboard, Courses, Status, etc.)
-│   │   ├── layouts/            # Dashboard & Auth Shell Layouts
-│   │   ├── hooks/              # Custom React Hooks (Health, Theme, etc.)
-│   │   ├── services/           # Typed API Client & Health Services
-│   │   ├── lib/                # Utility Singletons (QueryClient, Tailwind utils)
-│   │   ├── types/              # TypeScript Type Definitions
-│   │   ├── routes/             # App Router Configuration
-│   │   ├── App.tsx             # Application Root
-│   │   └── main.tsx            # Entrypoint
-│   ├── public/                 # Static Assets
-│   ├── package.json            # Node Dependencies & Scripts
-│   ├── tsconfig.json           # Strict TypeScript Configuration
-│   └── vite.config.ts          # Vite Bundler Configuration
+│   │   ├── components/         # Reusable UI & Navigation (Sidebar, Navbar)
+│   │   ├── pages/              # Landing, Login, Courses, Calendar, PPT Viewer, Dashboards
+│   │   ├── routes/             # RBAC Route Guards & Route Configuration
+│   │   ├── services/           # Typed Axios API Client
+│   │   └── context/            # AuthContext & Session State
+│   ├── tests/                  # Vitest Component & Integration Tests (69 Tests)
+│   ├── package.json
+│   └── vite.config.ts
 │
 ├── backend/                    # FastAPI Main LMS Backend
 │   ├── app/
-│   │   ├── api/                # API Versioning & Route Endpoints
-│   │   │   └── v1/
-│   │   │       ├── endpoints/  # Health, System, and Resource Endpoints
-│   │   │       └── router.py   # Aggregated API v1 Router
-│   │   ├── core/               # Central Config, Logging, Errors & Exceptions
-│   │   ├── db/                 # Async SQLAlchemy Session & Base
+│   │   ├── api/v1/             # Endpoints (Auth, Courses, Quizzes, Track360)
+│   │   ├── core/               # RBAC, Security, JWT Tokens, Config
+│   │   ├── db/                 # Database Session & Course Seeding
 │   │   ├── models/             # SQLAlchemy Declarative Models
-│   │   ├── schemas/            # Pydantic Request & Response Envelopes
-│   │   ├── repositories/       # Data Access Repository Interfaces
-│   │   ├── services/           # Business Logic Service Layer
-│   │   ├── middleware/         # Structured Logging & CORS Middleware
-│   │   ├── redis/              # Redis Client & Cache Abstractions
-│   │   └── main.py             # FastAPI App Factory & Lifespan Hooks
-│   ├── tests/                  # Pytest Unit & Integration Test Suite
-│   ├── alembic/                # Database Migrations
-│   ├── alembic.ini             # Alembic Configuration
-│   └── requirements.txt        # Backend Python Dependencies
+│   │   ├── repositories/       # Data Access Layer
+│   │   └── services/           # Business Logic Layer
+│   ├── tests/                  # Pytest Unit & Integration Tests
+│   └── requirements.txt
 │
-├── ai-service/                 # FastAPI AI Microservice
-│   ├── app/
-│   │   ├── api/                # AI Endpoints (v1)
-│   │   ├── core/               # Configuration & Logging
-│   │   ├── embeddings/         # Vector Embedding Generation Interfaces
-│   │   ├── llm/                # LLM Provider Registry & Factory
-│   │   ├── rag/                # Document Chunking, Ingestion & Retrieval Pipelines
-│   │   ├── services/           # AI Tutor, Quiz Generator, Assignment Evaluator
-│   │   └── main.py             # FastAPI AI Service Entrypoint
-│   ├── tests/                  # AI Service Tests
-│   └── requirements.txt        # AI Dependencies
-│
-├── ml-service/                 # FastAPI ML Microservice
-│   ├── app/
-│   │   ├── api/                # ML Endpoints (v1)
-│   │   ├── core/               # Configuration & Logging
-│   │   ├── datasets/           # Dataset Ingestion & Validation
-│   │   ├── features/           # Feature Engineering Transformers
-│   │   ├── models/             # Model Registry & Inference Predictor
-│   │   ├── training/           # Model Training Pipeline Abstractions
-│   │   ├── evaluation/         # Performance Metrics & Diagnostics
-│   │   └── main.py             # FastAPI ML Service Entrypoint
-│   ├── tests/                  # ML Service Tests
-│   └── requirements.txt        # ML Dependencies
-│
-├── infrastructure/             # Infrastructure & Deployment Assets
-│   ├── docker/                 # Postgres & Redis Docker configs
-│   ├── nginx/                  # Reverse Proxy Gateway Config
-│   └── scripts/                # Development startup scripts (PowerShell & Bash)
-│
-├── docs/                       # Comprehensive System Documentation
-│   ├── architecture.md         # Deep-dive System Architecture
-│   ├── development.md          # Setup & Contribution Manual
-│   └── api.md                  # REST API Endpoints Specification
-│
-├── docker-compose.yml          # Local Docker Compose Infrastructure
-├── .env.example                # Canonical Environment Configuration Template
-├── .gitignore                  # Git Ignore Rules
 └── README.md                   # Primary Documentation
 ```
 
 ---
 
-## 5. Prerequisites
+## 📄 License
 
-Before running the project locally, ensure you have:
-- **Python**: `3.11` or `3.12`
-- **Node.js**: `18.x` or `20.x` (with `npm 9+`)
-- **Docker**: Docker Desktop / Docker Engine 24+ (optional for local PostgreSQL/Redis)
-- **PostgreSQL**: Version 16+ (default port `5432`)
-- **Redis**: Version 7+ (default port `6379`)
-
----
-
-## 6. Environment Setup
-
-1. Copy the environment configuration template:
-   ```bash
-   cp .env.example .env
-   ```
-2. On Windows PowerShell:
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-3. Inspect and verify variables in `.env`:
-   - `DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/learnova_db`
-   - `REDIS_URL=redis://localhost:6379/0`
-   - `BACKEND_PORT=8000`
-   - `AI_SERVICE_PORT=8001`
-   - `ML_SERVICE_PORT=8002`
-   - `FRONTEND_PORT=5173`
-
----
-
-## 7. Docker Infrastructure Setup
-
-To spin up PostgreSQL and Redis with health checks and persistent volumes:
-
-```bash
-docker compose up -d postgres redis
-```
-
-Check the health status of running containers:
-```bash
-docker compose ps
-```
-
-To stop containers:
-```bash
-docker compose down
-```
-
----
-
-## 8. Local Development & Service Execution
-
-### Python Virtual Environment:
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r backend/requirements.txt
-pip install -r ai-service/requirements.txt
-pip install -r ml-service/requirements.txt
-```
-
-### Running Backend Service (Port 8000)
-```powershell
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### Running AI Service (Port 8001)
-```powershell
-uvicorn ai-service.app.main:app --host 0.0.0.0 --port 8001 --reload
-```
-
-### Running ML Service (Port 8002)
-```powershell
-uvicorn ml-service.app.main:app --host 0.0.0.0 --port 8002 --reload
-```
-
-### Running Frontend Application (Port 5173)
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend web app will be available at `http://localhost:5173`.
-Navigate to `http://localhost:5173/status` to view real-time diagnostics of all microservices, database, and cache connections.
-
----
-
-## 9. Automated Testing
-
-Run the complete test suite across backend, AI, and ML services:
-
-```powershell
-# Python Test Suite
-pytest -v
-
-# Frontend Test Suite
-cd frontend
-npm test
-```
-
-Build the production frontend bundle:
-```powershell
-cd frontend
-npm run build
-```
-
----
-
-## 10. Code Quality & Linting
-
-### Python (Ruff):
-```powershell
-# Check formatting and lint rules
-ruff check backend ai-service ml-service
-
-# Format files
-ruff format backend ai-service ml-service
-```
-
-### Frontend (ESLint & TypeScript):
-```powershell
-cd frontend
-npm run lint
-npm run build
-```
-
----
-
-## 11. API Documentation
-
-All microservices provide auto-generated interactive Swagger OpenAPI documentation:
-
-| Service | Endpoint | Swagger UI URL | OpenAPI JSON |
-|---|---|---|---|
-| **Backend LMS** | `:8000` | [http://localhost:8000/docs](http://localhost:8000/docs) | `/api/v1/openapi.json` |
-| **AI Service** | `:8001` | [http://localhost:8001/docs](http://localhost:8001/docs) | `/api/v1/openapi.json` |
-| **ML Service** | `:8002` | [http://localhost:8002/docs](http://localhost:8002/docs) | `/api/v1/openapi.json` |
-
-For full request/response schemas, see [`docs/api.md`](docs/api.md).
-
----
-
-## 12. Future Roadmap
-
-- **Phase 2: Authentication & Multi-Tenancy**: Granular JWT/OAuth2 authentication, RBAC (Student, Instructor, Admin), session management in Redis.
-- **Phase 3: LMS Core Domain**: Course creation, curriculum builders, multimedia lessons, enrollment lifecycles, and quiz grading engines.
-- **Phase 4: RAG Knowledge Assistant**: Vector database indexing (pgvector / Qdrant), PDF/document ingestion, contextual course Q&A tutor.
-- **Phase 5: ML Analytics & Personalization**: Student performance prediction models, adaptive recommendations, churn risk scoring, and instructor analytics dashboard.
-- **Phase 6: Production Hardening & Cloud Deployment**: Kubernetes manifests, CI/CD pipelines, rate limiting, and global CDN delivery.
-
----
-
-## 13. License
-
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the [MIT License](LICENSE).
+Distributed by **Learnova AI**.
