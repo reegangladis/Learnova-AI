@@ -46,10 +46,12 @@ import { ProtectedRoute, RoleProtectedRoute } from "@/routes/RouteGuards";
 export function AppRoutes() {
   return (
     <Routes>
+      {/* Standalone Fullscreen Landing Page (No Sidebar or Search Bar, matching screenshot) */}
+      <Route path="/" element={<LandingPage />} />
+
       {/* Platform Layout Routes */}
       <Route element={<DashboardLayout />}>
         {/* Public Overview & Showcase */}
-        <Route path="/" element={<LandingPage />} />
         <Route path="/status" element={<SystemStatusPage />} />
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/courses/:courseId" element={<CourseDetailPage />} />
