@@ -20,9 +20,10 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
 [![Vitest](https://img.shields.io/badge/Tests-69%2F69%20Passing-success?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Live%20Production-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://learnova-ai-two.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-[Live Features](#-key-features) • [Course Catalog](#-seeded-course-catalog) • [Demo Credentials](#-demo-personas--credentials) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [API Specs](#-api-documentation)
+[🌐 Live App](https://learnova-ai-two.vercel.app) • [Live Features](#-key-features) • [Course Catalog](#-seeded-course-catalog) • [Demo Credentials](#-demo-personas--credentials) • [Quick Start](#-quick-start) • [Architecture](#-architecture)
 
 </div>
 
