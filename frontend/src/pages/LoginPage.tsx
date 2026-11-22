@@ -4,7 +4,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Eye, EyeOff, AlertCircle, Sparkles, User, KeyRound, ArrowLeft, GraduationCap } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Sparkles,
+  User,
+  KeyRound,
+  ArrowLeft,
+  GraduationCap,
+  Layers,
+  CheckCircle2,
+  BookOpen,
+  ShieldCheck,
+} from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -21,7 +34,8 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const fromLocation = (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
+  const fromLocation =
+    (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
 
   const {
     register,
@@ -55,347 +69,349 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white">
-      {/* LEFT HALF: Dark Petrol Blue with Illustrated Card (Screenshot 1) */}
-      <div className="lg:w-1/2 min-h-[340px] lg:min-h-screen bg-gradient-to-br from-[#092D3E] via-[#0B374D] to-[#072433] flex items-center justify-center p-6 sm:p-12 relative overflow-hidden">
-        {/* Subtle background glow */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen w-full bg-[#0B0F19] text-slate-100 flex flex-col justify-between relative overflow-hidden">
+      {/* Dynamic ambient background glow */}
+      <div className="absolute top-[-10%] left-[-5%] w-[550px] h-[550px] bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-violet-600/15 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-cyan-500/5 rounded-full blur-[180px] pointer-events-none" />
 
+      {/* Top Navigation Bar */}
+      <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between relative z-10">
         <Link
           to="/"
-          className="absolute top-6 left-6 text-white/80 hover:text-white flex items-center gap-2 text-xs font-medium z-10 transition-colors"
+          className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-slate-900/70 border border-slate-800/80 text-xs font-medium text-slate-300 hover:text-white hover:border-slate-700 transition-all backdrop-blur-md group"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-indigo-400" />
           <span>Back to Home</span>
         </Link>
 
-        {/* Floating White Card with Logo & Sketch Illustration */}
-        <div className="w-full max-w-sm bg-white rounded-3xl p-8 shadow-2xl border border-white/20 text-center relative z-10 animate-in fade-in zoom-in-95 duration-300">
-          {/* Logo */}
-          <div className="flex items-center justify-center gap-2.5 mb-6">
-            <div className="w-9 h-9 rounded-full bg-[#0B374D] flex items-center justify-center text-amber-400 font-bold shadow-sm">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <span className="font-extrabold text-xl tracking-tight text-slate-900 block leading-tight">
-                Learnova
-              </span>
-              <span className="text-[10px] tracking-widest uppercase font-semibold text-slate-500 block">
-                Online LMS
-              </span>
-            </div>
+        {/* Brand Logo */}
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+            <GraduationCap className="w-4 h-4" />
           </div>
+          <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+            Learnova
+          </span>
+        </Link>
 
-          {/* Student Study Sketch SVG Illustration */}
-          <div className="w-full h-56 flex items-center justify-center py-2 px-4">
-            <svg
-              className="w-full h-full max-h-52 text-slate-800"
-              viewBox="0 0 320 280"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* Desk Surface */}
-              <path
-                d="M30 220 L290 220"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-              <path
-                d="M45 220 L25 265 M275 220 L295 265"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-
-              {/* Laptop Screen & Base */}
-              <rect
-                x="110"
-                y="130"
-                width="100"
-                height="65"
-                rx="4"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                fill="#F8FAFC"
-              />
-              <line
-                x1="125"
-                y1="150"
-                x2="195"
-                y2="150"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeDasharray="3 3"
-              />
-              <line
-                x1="125"
-                y1="162"
-                x2="180"
-                y2="162"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M95 195 L225 195 L215 205 L105 205 Z"
-                stroke="currentColor"
-                strokeWidth="2"
-                fill="#E2E8F0"
-              />
-
-              {/* Student Figure (Head, Glasses, Shoulders, Arms Typing) */}
-              <circle
-                cx="160"
-                cy="65"
-                r="22"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                fill="#FFFFFF"
-              />
-              {/* Hair sketch */}
-              <path
-                d="M142 58 C144 45, 176 45, 178 58"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              {/* Glasses */}
-              <rect x="148" y="62" width="10" height="7" rx="2" stroke="currentColor" strokeWidth="1.8" />
-              <rect x="162" y="62" width="10" height="7" rx="2" stroke="currentColor" strokeWidth="1.8" />
-              <line x1="158" y1="65" x2="162" y2="65" stroke="currentColor" strokeWidth="1.8" />
-              {/* Torso & Shoulders */}
-              <path
-                d="M130 115 C130 90, 190 90, 190 115 L190 150 L130 150 Z"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                fill="#F1F5F9"
-              />
-              {/* Arms to keyboard */}
-              <path
-                d="M132 118 Q115 155 125 185 L145 190"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              />
-              <path
-                d="M188 118 Q205 155 195 185 L175 190"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              />
-
-              {/* Notebooks & Papers on Desk */}
-              <polygon
-                points="50,195 90,185 105,215 65,225"
-                stroke="currentColor"
-                strokeWidth="2"
-                fill="#FFFFFF"
-              />
-              <line x1="60" y1="195" x2="95" y2="190" stroke="currentColor" strokeWidth="1.2" />
-              <line x1="65" y1="205" x2="100" y2="200" stroke="currentColor" strokeWidth="1.2" />
-
-              {/* Coffee Cup */}
-              <ellipse cx="250" cy="205" rx="10" ry="4" stroke="currentColor" strokeWidth="1.8" />
-              <path
-                d="M240 205 L242 220 Q250 225 258 220 L260 205"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                fill="#FFFFFF"
-              />
-              <path d="M260 210 Q267 212 260 218" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </div>
-
-          <p className="text-xs text-slate-600 font-medium tracking-wide">
-            Empowering your learning journey everywhere
-          </p>
-        </div>
-      </div>
-
-      {/* RIGHT HALF: Crisp White Login Form (Screenshot 1) */}
-      <div className="lg:w-1/2 flex flex-col justify-between p-6 sm:p-12 lg:p-16 relative">
-        <div className="max-w-md w-full mx-auto my-auto py-6">
-          <div className="mb-8">
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Log in to continue
-            </h1>
-            <p className="text-sm text-slate-500 mt-1.5">
-              Welcome back! Please enter your account credentials.
-            </p>
-          </div>
-
-          {/* Session timeout or server error alert banner */}
-          {serverError ? (
-            <div
-              role="alert"
-              className="mb-6 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5 animate-in fade-in"
-            >
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-              <div>
-                <p className="font-semibold">Authentication Failed</p>
-                <p className="mt-0.5">{serverError}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="mb-6 p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-800 text-xs flex items-center gap-2.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-              <span>Please log in to access your courses, progress, and assessments.</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            {/* Email / Username field */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
-              >
-                Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <User className="w-4 h-4" />
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="reegangladis@gmail.com"
-                  {...register("email")}
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B374D] focus:border-[#0B374D] transition-all text-sm"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-
-            {/* Password field */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <KeyRound className="w-4 h-4" />
-                </div>
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="••••••••••••"
-                  {...register("password")}
-                  className="w-full pl-10 pr-11 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B374D] focus:border-[#0B374D] transition-all text-sm"
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Hide password field" : "Show password field"}
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-rose-500 text-xs mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-
-            {/* Forgotten Password link (Screenshot 1) */}
-            <div className="pt-1 text-center">
-              <Link
-                to="/forgot-password"
-                className="text-xs font-semibold text-slate-600 hover:text-[#0B374D] hover:underline transition-colors"
-              >
-                Forgotten your username or password?
-              </Link>
-            </div>
-
-            {/* Main Log in Button (Warm Mustard/Amber Yellow as in Screenshot 1) */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              aria-label="Log in / Sign In"
-              className="w-full py-3.5 px-6 bg-[#E59819] hover:bg-[#D48810] active:scale-[0.99] text-slate-950 font-bold text-sm rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 cursor-pointer"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-slate-900/40 border-t-slate-900 rounded-full animate-spin" />
-                  <span>Logging in...</span>
-                </>
-              ) : (
-                <>
-                  <span>Log in</span>
-                  <span className="sr-only">Sign In</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* DEMO PERSONAS FOR LOGIN (PRESERVED AS INSTRUCTED) */}
-          <div className="mt-8 pt-6 border-t border-slate-200">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Demo Personas (Development)</span>
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => autofillDevAccount("admin@learnova.ai", "Admin123!")}
-                className="text-left p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 transition-colors"
-              >
-                <span className="font-bold block text-[#0B374D]">Admin</span>
-                <span className="text-[10px] text-slate-500">admin@learnova.ai</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => autofillDevAccount("student@learnova.ai", "Student123!")}
-                className="text-left p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 transition-colors"
-              >
-                <span className="font-bold block text-emerald-700">Student</span>
-                <span className="text-[10px] text-slate-500">student@learnova.ai</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => autofillDevAccount("instructor@learnova.ai", "Instructor123!")}
-                className="text-left p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 transition-colors"
-              >
-                <span className="font-bold block text-purple-700">Instructor</span>
-                <span className="text-[10px] text-slate-500">instructor@learnova.ai</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => autofillDevAccount("superadmin@learnova.ai", "SuperAdmin123!")}
-                className="text-left p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 transition-colors"
-              >
-                <span className="font-bold block text-amber-700">Super Admin</span>
-                <span className="text-[10px] text-slate-500">superadmin@learnova.ai</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer (Screenshot 1) */}
-        <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-3">
-          <span>LEARNOVA · LMS · SECURE SIGN IN</span>
-          <button
-            type="button"
-            className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+        <div className="text-xs text-slate-400 hidden sm:flex items-center gap-2">
+          <span>Need an account?</span>
+          <Link
+            to="/register"
+            className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
           >
-            Cookies notice
-          </button>
+            Register
+          </Link>
         </div>
-      </div>
+      </header>
+
+      {/* Main Content Area: Split 2-Column Responsive Layout */}
+      <main className="w-full max-w-7xl mx-auto px-6 py-4 lg:py-8 flex-1 flex items-center relative z-10">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+          
+          {/* LEFT COLUMN: Modern Showcase & Platform Value */}
+          <div className="lg:col-span-6 space-y-6 lg:pr-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold tracking-wide">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Next-Gen Intelligent LMS</span>
+            </div>
+
+            <div className="space-y-3">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+                Empowering Your{" "}
+                <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                  Learning Journey
+                </span>
+              </h1>
+              <p className="text-slate-400 text-sm sm:text-base leading-relaxed max-w-xl">
+                Log in to access comprehensive multi-module courses with interactive presentation slide decks,
+                embedded video lectures, self-assessment checkpoints, and real-time quizzes.
+              </p>
+            </div>
+
+            {/* Feature Highlights Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Interactive PPT Decks</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Slide-by-slide learning modules</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400 shrink-0">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Quizzes & Self-Assessments</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Instant feedback & progress tracking</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Structured Curricula</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Cloud, AI, DevOps & Security</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Role-Based Security</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Focused student & instructor workspaces</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Learner Trust Badge */}
+            <div className="flex items-center gap-3 pt-2">
+              <div className="flex -space-x-2">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-500 border-2 border-slate-900 flex items-center justify-center text-[10px] font-bold text-white">
+                  AL
+                </div>
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-rose-500 border-2 border-slate-900 flex items-center justify-center text-[10px] font-bold text-white">
+                  RO
+                </div>
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 border-2 border-slate-900 flex items-center justify-center text-[10px] font-bold text-white">
+                  ME
+                </div>
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 border-2 border-slate-900 flex items-center justify-center text-[10px] font-bold text-white">
+                  +
+                </div>
+              </div>
+              <p className="text-xs text-slate-400">
+                Join <span className="text-slate-200 font-semibold">45,000+</span> active learners advancing their skills.
+              </p>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Modern Glassmorphic Login Card */}
+          <div className="lg:col-span-6 w-full max-w-md mx-auto">
+            <div className="p-7 sm:p-9 rounded-3xl bg-slate-900/80 border border-slate-800 backdrop-blur-xl shadow-2xl shadow-indigo-950/40 relative">
+              
+              {/* Card Header */}
+              <div className="mb-6">
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Log in to continue
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                  Welcome back! Please enter your account credentials.
+                </p>
+              </div>
+
+              {/* Server Error Alert Banner or Informative Status */}
+              {serverError ? (
+                <div
+                  role="alert"
+                  className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in"
+                >
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                  <div>
+                    <p className="font-semibold text-rose-200">Authentication Failed</p>
+                    <p className="mt-0.5">{serverError}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-5 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 shrink-0 animate-pulse" />
+                  <span>Please log in to access your courses, progress, and assessments.</span>
+                </div>
+              )}
+
+              {/* Login Form */}
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                {/* Email Address */}
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5"
+                  >
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="reegangladis@gmail.com"
+                      {...register("email")}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-rose-400 text-xs mt-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5"
+                  >
+                    Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      placeholder="••••••••••••"
+                      {...register("password")}
+                      className="w-full pl-10 pr-11 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
+                    />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "Hide password field" : "Show password field"}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-rose-400 text-xs mt-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Forgotten Password link */}
+                <div className="pt-0.5 text-right">
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-medium text-slate-400 hover:text-indigo-400 hover:underline transition-colors"
+                  >
+                    Forgotten your username or password?
+                  </Link>
+                </div>
+
+                {/* Primary Sign In Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  aria-label="Sign In"
+                  className="w-full py-3.5 px-6 bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign In to Learnova</span>
+                      <span className="sr-only">Sign In</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* DEMO PERSONAS FOR QUICK LOGIN (PRESERVED AS INSTRUCTED) */}
+              <div className="mt-7 pt-5 border-t border-slate-800">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Demo Personas (Development)</span>
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => autofillDevAccount("admin@learnova.ai", "Admin123!")}
+                    className="text-left p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/40 text-xs text-slate-300 transition-all group"
+                  >
+                    <span className="font-bold block text-indigo-400 group-hover:text-indigo-300">
+                      Admin
+                    </span>
+                    <span className="text-[10px] text-slate-500 block truncate">
+                      admin@learnova.ai
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => autofillDevAccount("student@learnova.ai", "Student123!")}
+                    className="text-left p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/40 text-xs text-slate-300 transition-all group"
+                  >
+                    <span className="font-bold block text-emerald-400 group-hover:text-emerald-300">
+                      Student
+                    </span>
+                    <span className="text-[10px] text-slate-500 block truncate">
+                      student@learnova.ai
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => autofillDevAccount("instructor@learnova.ai", "Instructor123!")}
+                    className="text-left p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-violet-500/40 text-xs text-slate-300 transition-all group"
+                  >
+                    <span className="font-bold block text-violet-400 group-hover:text-violet-300">
+                      Instructor
+                    </span>
+                    <span className="text-[10px] text-slate-500 block truncate">
+                      instructor@learnova.ai
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => autofillDevAccount("superadmin@learnova.ai", "SuperAdmin123!")}
+                    className="text-left p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/40 text-xs text-slate-300 transition-all group"
+                  >
+                    <span className="font-bold block text-amber-400 group-hover:text-amber-300">
+                      Super Admin
+                    </span>
+                    <span className="text-[10px] text-slate-500 block truncate">
+                      superadmin@learnova.ai
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile Register Link */}
+              <div className="mt-5 text-center sm:hidden text-xs text-slate-400">
+                <span>Don't have an account? </span>
+                <Link to="/register" className="text-indigo-400 font-semibold">
+                  Register
+                </Link>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      {/* Modern Footer */}
+      <footer className="w-full max-w-7xl mx-auto px-6 py-6 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-3 relative z-10">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span>Learnova Systems Operational · TLS 1.3 Encrypted</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <Link to="/status" className="hover:text-slate-300 transition-colors">
+            System Status
+          </Link>
+          <span>·</span>
+          <span>Learnova LMS Platform</span>
+        </div>
+      </footer>
     </div>
   );
 }
