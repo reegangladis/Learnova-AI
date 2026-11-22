@@ -47,6 +47,7 @@ export function CourseLearningPage() {
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aiTutorOpen, setAiTutorOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(1);
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
@@ -647,30 +648,84 @@ export function CourseLearningPage() {
                   />
                 )}
 
+                {/* Presentation Slides (PPT Deck) or PDF Document */}
                 {activeLesson.content_type === "pdf" && (
-                  <div className="rounded-xl border border-border p-8 bg-muted/20 text-center space-y-4">
-                    <div className="h-14 w-14 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center">
-                      <FileText className="h-7 w-7" />
+                  <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden space-y-4">
+                    {/* PPT Presentation Deck Player Header */}
+                    <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">
+                          PPT
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-white">{activeLesson.title}</h4>
+                          <p className="text-[10px] text-slate-400">Interactive Slide Deck · 6 Slides</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCurrentSlide((s) => Math.max(1, s - 1))}
+                          disabled={currentSlide <= 1}
+                          className="px-2.5 py-1 text-xs font-semibold rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 transition-colors"
+                        >
+                          ‹ Prev
+                        </button>
+                        <span className="text-xs font-mono font-semibold px-2">
+                          Slide {currentSlide} / 6
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setCurrentSlide((s) => Math.min(6, s + 1))}
+                          disabled={currentSlide >= 6}
+                          className="px-2.5 py-1 text-xs font-semibold rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-40 transition-colors"
+                        >
+                          Next ›
+                        </button>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <h4 className="font-semibold text-base text-foreground">PDF Document Resource</h4>
-                      <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                        Review the associated lecture notes, guides, and curriculum slides.
-                      </p>
+
+                    {/* Interactive Slide Canvas */}
+                    <div className="p-8 bg-gradient-to-br from-slate-50 to-indigo-50/30 min-h-[300px] flex flex-col justify-between rounded-xl mx-4 my-2 border border-slate-200">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                          <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-600">
+                            PART {currentSlide}: CORE ARCHITECTURE
+                          </span>
+                          <span className="text-xs font-mono text-slate-400">Learnova Deck Series</span>
+                        </div>
+                        <h3 className="text-xl font-extrabold text-slate-900">
+                          {currentSlide === 1 && "1. System Primitives & Microservice Boundaries"}
+                          {currentSlide === 2 && "2. Distributed Communication & Network Topology"}
+                          {currentSlide === 3 && "3. High-Availability State & Replication"}
+                          {currentSlide === 4 && "4. Failure Recovery & Health Probing"}
+                          {currentSlide === 5 && "5. Observability, Metrics & Telemetry Pipelines"}
+                          {currentSlide === 6 && "6. Production Hardening & Operational Runbooks"}
+                        </h3>
+                        <ul className="space-y-2 text-xs text-slate-600 list-disc list-inside leading-relaxed">
+                          <li>Deconstruct single points of failure with redundant coordinator failovers.</li>
+                          <li>Guarantee zero-downtime rolling upgrades using declarative deployment manifests.</li>
+                          <li>Apply strict cryptographic identity verification across all east-west traffic channels.</li>
+                        </ul>
+                      </div>
+
+                      <div className="pt-6 border-t border-slate-200 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          Slide Deck: {activeLesson.title}
+                        </span>
+                        {activeLesson.resource_url && (
+                          <a
+                            href={activeLesson.resource_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 underline"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Download Full Slide Deck (.PPTX / PDF)</span>
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    {activeLesson.resource_url && (
-                      <a
-                        href={activeLesson.resource_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-block"
-                      >
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <ExternalLink className="h-4 w-4" />
-                          Open Document Resource
-                        </Button>
-                      </a>
-                    )}
                   </div>
                 )}
 

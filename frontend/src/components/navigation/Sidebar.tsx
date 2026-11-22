@@ -33,9 +33,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const { user, isAuthenticated, hasRole } = useAuth();
 
+  // ExcelR Operations (Track360) is hidden for student-only users
+  const isStudentOnly =
+    isAuthenticated &&
+    !hasRole("ADMIN", "SUPER_ADMIN", "INSTRUCTOR") &&
+    Boolean(user?.roles?.every((r) => r.toUpperCase() === "STUDENT"));
+
   const navigation = [
     {
-      title: "Navigation",
+      title: "Learning Hub",
       items: [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { name: "My Courses", href: "/my-courses", icon: BookOpen },
@@ -45,13 +51,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ],
     },
     {
-      title: "RESOURCES",
+      title: "Resources",
       items: [
         { name: "Private Files", href: "/private-files", icon: FolderKanban },
       ],
     },
-    // ExcelR Operations (Track360) - PRESERVED UNTOUCHED AS REQUESTED
-    ...(isAuthenticated
+    // ExcelR Operations (Track360) - Visible for Staff/Admin/Instructor, hidden for students
+    ...(isAuthenticated && !isStudentOnly
       ? [
           {
             title: "ExcelR Operations (Track360)",
@@ -116,24 +122,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         />
       )}
 
-      {/* Sidebar Container (Deep Petrol Blue matching Screenshot 4) */}
+      {/* Sidebar Container (Sleek Modern Obsidian Palette) */}
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-40 flex w-64 flex-col border-r border-[#0D3B52] bg-[#072331] text-slate-300 transition-transform duration-200 ease-in-out md:translate-x-0 shadow-xl",
+          "fixed top-0 bottom-0 left-0 z-40 flex w-64 flex-col border-r border-slate-800/80 bg-[#0B0F19] text-slate-300 transition-transform duration-200 ease-in-out md:translate-x-0 shadow-2xl",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Brand Header */}
-        <div className="flex h-16 items-center gap-3 border-b border-[#0D3B52]/80 px-6 bg-[#061F2C]">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-amber-400 border border-white/10 shadow-xs">
+        <div className="flex h-16 items-center gap-3 border-b border-slate-800/80 px-6 bg-[#080C14]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/30">
             <GraduationCap className="h-5 w-5" />
           </div>
           <div>
-            <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+            <span className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
               Learnova
             </span>
-            <p className="text-[10px] text-amber-400/80 uppercase tracking-widest font-semibold">
-              Online LMS
+            <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-semibold">
+              Learning Platform
             </p>
           </div>
         </div>
@@ -141,14 +147,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* User Identity Pill (if logged in) */}
         {isAuthenticated && user && (
           <div className="px-4 pt-3.5 pb-1">
-            <div className="p-2.5 rounded-xl bg-[#092D3E] border border-[#0F4A68]/60 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#0E4663] text-amber-300 font-bold text-xs flex items-center justify-center border border-[#165E85]">
+            <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
                 {user.first_name?.[0]}
                 {user.last_name?.[0]}
               </div>
               <div className="overflow-hidden">
                 <p className="text-xs font-semibold text-white truncate">{user.full_name}</p>
-                <p className="text-[10px] text-slate-400 font-mono truncate">{user.roles[0] || "STUDENT"}</p>
+                <p className="text-[10px] text-indigo-300 font-mono truncate">{user.roles[0] || "STUDENT"}</p>
               </div>
             </div>
           </div>
@@ -159,7 +165,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           {navigation.map((section, idx) => (
             <div key={idx} className="space-y-1">
               {section.title && (
-                <p className="px-3 text-[10px] font-bold text-slate-400/80 uppercase tracking-wider">
+                <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {section.title}
                 </p>
               )}
@@ -175,20 +181,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       to={item.href}
                       onClick={onClose}
                       className={cn(
-                        "flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                        "flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-all",
                         isActive
-                          ? "bg-[#0F4C6B] text-white shadow-xs font-semibold border-l-2 border-[#E59819]"
-                          : "text-slate-300 hover:bg-[#0A3246] hover:text-white"
+                          ? "bg-gradient-to-r from-indigo-600/90 to-indigo-700/80 text-white shadow-sm font-semibold border-l-2 border-cyan-400"
+                          : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className={cn("h-4 w-4", isActive ? "text-amber-400" : "text-slate-400")} />
+                        <Icon className={cn("h-4 w-4", isActive ? "text-cyan-300" : "text-slate-400")} />
                         <span>{item.name}</span>
                       </div>
                       {item.badge && (
                         <Badge
                           variant={isActive ? "secondary" : "default"}
-                          className="text-[9px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-300 border-amber-500/30"
+                          className="text-[9px] px-1.5 py-0 h-4 bg-indigo-500/20 text-indigo-300 border-indigo-500/30"
                         >
                           {item.badge}
                         </Badge>
@@ -201,14 +207,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </div>
 
-        {/* Bottom "Need help?" Pill Button (Matching Screenshot 4) */}
-        <div className="p-4 border-t border-[#0D3B52]/80 bg-[#061F2C]">
+        {/* Bottom Support Widget */}
+        <div className="p-4 border-t border-slate-800/80 bg-[#080C14]">
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 py-2 px-3.5 rounded-full bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
           >
             <LifeBuoy className="h-4 w-4" />
-            <span>Need help?</span>
+            <span>Learnova Support</span>
           </button>
         </div>
       </aside>

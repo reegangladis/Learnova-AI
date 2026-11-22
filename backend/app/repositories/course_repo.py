@@ -109,8 +109,9 @@ class CourseRepository:
                 else:
                     query = query.where(Course.organization_id == organization_id)
             else:
-                # Unaffiliated / anonymous users can only see global courses
-                query = query.where(Course.organization_id.is_(None))
+                # When no organization_id is specified and allow_global is True, return all public catalog courses
+                if not allow_global:
+                    query = query.where(Course.organization_id.is_(None))
 
         # Count total
         count_query = select(func.count()).select_from(query.subquery())

@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
   Star,
-  MoreVertical,
   Search,
   ArrowRight,
   AlertCircle,
@@ -280,32 +279,33 @@ export function MyLearningPage() {
                   key={enr.id}
                   className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
                 >
-                  {/* Top Colored Header Banner with Monogram & Actions (Screenshot 5) */}
-                  <div className={`h-24 bg-gradient-to-r ${getCardColor(idx)} p-3 text-white flex items-start justify-between relative`}>
-                    <span className="text-xl font-extrabold tracking-tight drop-shadow-sm">
-                      {getMonogram(enr.course?.title || "CO")}
-                    </span>
+                  {/* Top Header Banner */}
+                  <div className={`h-24 bg-gradient-to-r ${getCardColor(idx)} p-3.5 text-white flex items-start justify-between relative`}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-xs flex items-center justify-center font-extrabold text-sm shadow-xs">
+                        {getMonogram(enr.course?.title || "CO")}
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded-full">
+                        {enr.course?.difficulty || "Comprehensive"}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-1.5">
-                      <button type="button" title="Star course" className="text-white/70 hover:text-amber-300 transition-colors">
+                      <button type="button" title="Star course" className="text-white/80 hover:text-amber-300 transition-colors">
                         <Star className="w-4 h-4" />
-                      </button>
-                      <button type="button" title="Options" className="text-white/70 hover:text-white transition-colors">
-                        <MoreVertical className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
 
                   {/* Body Content */}
                   <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                        <div className="w-4 h-4 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-[8px]">
-                          IN
-                        </div>
-                        <span className="truncate">DSM July, 2026 · Instructor</span>
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-semibold text-slate-500">
+                        <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">PPT Included</span>
+                        <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">Quizzes</span>
+                        <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">Self-Assessment</span>
                       </div>
 
-                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#0B374D] transition-colors line-clamp-2 leading-snug">
+                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
                         {enr.course?.title}
                       </h4>
                     </div>
@@ -323,7 +323,7 @@ export function MyLearningPage() {
                       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
-                            isDone ? "bg-emerald-500" : "bg-amber-500"
+                            isDone ? "bg-emerald-500" : "bg-indigo-600"
                           }`}
                           style={{ width: `${progress}%` }}
                         />
@@ -339,7 +339,7 @@ export function MyLearningPage() {
                       <Link to={`/learning/courses/${enr.course_id}`}>
                         <button
                           type="button"
-                          className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold px-3 py-1.5 rounded-md text-xs flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-xs transition-all cursor-pointer"
                         >
                           <span>{isDone ? "Review" : progress > 0 ? "Continue" : "Start"}</span>
                           <ArrowRight className="w-3 h-3" />

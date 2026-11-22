@@ -76,28 +76,31 @@ export function Navbar({ onOpenMobileMenu }: NavbarProps) {
         </nav>
       </div>
 
-      {/* Center: Course Search Input (Screenshot 4) */}
+      {/* Center: Universal Course Search Input */}
       <div className="hidden md:flex items-center w-full max-w-sm mx-4">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search courses... /"
-            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0B374D] focus:bg-white transition-all"
+            placeholder="Search courses, modules, slide decks... /"
+            className="w-full pl-9 pr-12 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all"
           />
+          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-100 rounded border border-slate-200">
+            Ctrl+K
+          </kbd>
         </div>
       </div>
 
-      {/* Right side: Actions & User Avatar (Screenshot 4) */}
+      {/* Right side: Actions & User Avatar */}
       <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Ask JO / Ask AI Pill Button (Screenshot 4) */}
+        {/* Learnova AI Assistant Pill Button */}
         <button
           type="button"
           onClick={() => navigate("/dashboard")}
-          className="bg-[#0B374D] hover:bg-[#0E4663] active:scale-[0.98] text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs transition-all"
+          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.98] text-white text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition-all"
         >
-          <Sparkles className="h-3 w-3 text-amber-400" />
-          <span>Ask JO</span>
+          <Sparkles className="h-3.5 w-3.5 text-cyan-300" />
+          <span>Learnova AI</span>
         </button>
 
         {/* Theme switcher */}

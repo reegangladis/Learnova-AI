@@ -65,56 +65,63 @@ export function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        {/* ExcelR Track360 Operational Pages */}
+        {/* ExcelR Track360 Operational Pages (Restricted from Students) */}
         <Route
           path="/learners"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["INSTRUCTOR", "ADMIN", "SUPER_ADMIN"]}>
               <LearnersPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/learners/:candidateId"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["INSTRUCTOR", "ADMIN", "SUPER_ADMIN"]}>
               <LearnerProfilePage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/assignments"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["INSTRUCTOR", "ADMIN", "SUPER_ADMIN"]}>
               <AssignmentsPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/projects"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["INSTRUCTOR", "ADMIN", "SUPER_ADMIN"]}>
               <ProjectsPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/certificates"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["INSTRUCTOR", "ADMIN", "SUPER_ADMIN"]}>
               <CertificatesPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="/reports"
           element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={["INSTRUCTOR", "ADMIN", "SUPER_ADMIN"]}>
               <ReportsPage />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           }
         />
-        <Route path="/integration-health" element={<IntegrationHealthPage />} />
+        <Route
+          path="/integration-health"
+          element={
+            <RoleProtectedRoute allowedRoles={["INSTRUCTOR", "ADMIN", "SUPER_ADMIN"]}>
+              <IntegrationHealthPage />
+            </RoleProtectedRoute>
+          }
+        />
         <Route
           path="/profile"
           element={

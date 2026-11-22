@@ -169,68 +169,174 @@ export function CalendarPage() {
         </div>
       </div>
 
-      {/* Full Monthly Grid (Screenshot 3) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* Weekday headers */}
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80 text-center py-2 text-[11px] font-bold text-slate-500 tracking-wider">
-          {weekdays.map((w) => (
-            <div key={w}>{w}</div>
-          ))}
-        </div>
+      {/* Views Rendering */}
+      {selectedView === "month" && (
+        /* Full Monthly Grid */
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          {/* Weekday headers */}
+          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80 text-center py-2 text-[11px] font-bold text-slate-500 tracking-wider">
+            {weekdays.map((w) => (
+              <div key={w}>{w}</div>
+            ))}
+          </div>
 
-        {/* Days Grid */}
-        <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-slate-100">
-          {/* Empty padding cells for days prior to 1st */}
-          {Array.from({ length: paddingDays }).map((_, i) => (
-            <div key={`pad-${i}`} className="min-h-[105px] p-2 bg-slate-50/30 text-slate-300 text-xs font-semibold" />
-          ))}
+          {/* Days Grid */}
+          <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-slate-100">
+            {/* Empty padding cells for days prior to 1st */}
+            {Array.from({ length: paddingDays }).map((_, i) => (
+              <div key={`pad-${i}`} className="min-h-[105px] p-2 bg-slate-50/30 text-slate-300 text-xs font-semibold" />
+            ))}
 
-          {/* Actual days of November */}
-          {Array.from({ length: totalDays }).map((_, i) => {
-            const dayNum = i + 1;
-            const isToday = dayNum === 21;
-            const dayEvents = events.filter((e) => e.day === dayNum);
+            {/* Actual days of November */}
+            {Array.from({ length: totalDays }).map((_, i) => {
+              const dayNum = i + 1;
+              const isToday = dayNum === 21;
+              const dayEvents = events.filter((e) => e.day === dayNum);
 
-            return (
-              <div
-                key={`day-${dayNum}`}
-                className={`min-h-[110px] p-2 transition-colors flex flex-col justify-between ${
-                  isToday ? "bg-amber-50/40" : "hover:bg-slate-50/50"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span
-                    className={`text-xs font-extrabold w-6 h-6 flex items-center justify-center rounded-full ${
-                      isToday
-                        ? "bg-[#0B374D] text-white shadow-xs"
-                        : "text-slate-700"
-                    }`}
-                  >
-                    {dayNum}
-                  </span>
-                </div>
-
-                {/* Event pills inside the day */}
-                <div className="space-y-1 flex-1 overflow-y-auto max-h-[85px]">
-                  {dayEvents.map((evt) => (
-                    <div
-                      key={evt.id}
-                      title={`${evt.time} ${evt.title}`}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-medium truncate border flex items-center gap-1 ${getEventBadge(
-                        evt.type
-                      )}`}
+              return (
+                <div
+                  key={`day-${dayNum}`}
+                  className={`min-h-[110px] p-2 transition-colors flex flex-col justify-between ${
+                    isToday ? "bg-amber-50/40" : "hover:bg-slate-50/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span
+                      className={`text-xs font-extrabold w-6 h-6 flex items-center justify-center rounded-full ${
+                        isToday
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "text-slate-700"
+                      }`}
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${getEventDot(evt.type)}`} />
-                      <span className="font-mono font-bold shrink-0">{evt.time}</span>
-                      <span className="truncate">{evt.title}</span>
-                    </div>
-                  ))}
+                      {dayNum}
+                    </span>
+                  </div>
+
+                  {/* Event pills inside the day */}
+                  <div className="space-y-1 flex-1 overflow-y-auto max-h-[85px]">
+                    {dayEvents.map((evt) => (
+                      <div
+                        key={evt.id}
+                        title={`${evt.time} ${evt.title}`}
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium truncate border flex items-center gap-1 ${getEventBadge(
+                          evt.type
+                        )}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${getEventDot(evt.type)}`} />
+                        <span className="font-mono font-bold shrink-0">{evt.time}</span>
+                        <span className="truncate">{evt.title}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {selectedView === "week" && (
+        /* Week View (16 Nov - 22 Nov 2026) */
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 className="text-base font-bold text-slate-900">Week of 16 Nov – 22 Nov 2026</h3>
+            <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-full">Current Week</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+            {[16, 17, 18, 19, 20, 21, 22].map((dayNum, idx) => {
+              const dayName = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"][idx];
+              const dayEvents = events.filter((e) => e.day === dayNum);
+              const isToday = dayNum === 21;
+              return (
+                <div
+                  key={dayNum}
+                  className={`rounded-xl border p-3 flex flex-col justify-between min-h-[220px] ${
+                    isToday ? "border-indigo-500 bg-indigo-50/20 shadow-xs" : "border-slate-200 bg-slate-50/40"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{dayName}</span>
+                      <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? "bg-indigo-600 text-white" : "text-slate-700"}`}>
+                        {dayNum}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {dayEvents.map((evt) => (
+                        <div
+                          key={evt.id}
+                          className={`p-1.5 rounded-lg text-[10px] border ${getEventBadge(evt.type)}`}
+                        >
+                          <span className="font-mono font-bold block">{evt.time}</span>
+                          <span className="line-clamp-2 mt-0.5">{evt.title}</span>
+                        </div>
+                      ))}
+                      {dayEvents.length === 0 && (
+                        <p className="text-[11px] text-slate-400 italic pt-4 text-center">No schedule</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {selectedView === "day" && (
+        /* Day View */
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-8 text-center space-y-4">
+          <div className="max-w-md mx-auto space-y-2">
+            <h3 className="text-xl font-bold text-slate-900">Sunday, 22 November 2026</h3>
+            <p className="text-sm text-slate-500">Scheduled live classes, lab milestones, and assignment deadlines.</p>
+            <div className="py-12 border border-dashed border-slate-200 rounded-xl bg-slate-50/60 mt-4">
+              <p className="text-sm font-medium text-slate-400">Nothing here for this date.</p>
+              <button
+                type="button"
+                onClick={() => setSelectedView("month")}
+                className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline"
+              >
+                Return to full month calendar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedView === "upcoming" && (
+        /* Upcoming View */
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
+          <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+            <h3 className="text-base font-bold text-slate-900">Upcoming Academic Schedule</h3>
+            <span className="text-xs text-slate-500">Sorted chronologically</span>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">THIS WEEK</span>
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-10 rounded-full bg-rose-500" />
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">26VMC0C101 Mid-term Exam Submission</h4>
+                    <p className="text-[11px] text-slate-500">Saturday, 21 Nov · 09:00 AM</p>
+                  </div>
+                </div>
+                <button type="button" className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Open →</button>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-10 rounded-full bg-purple-500" />
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">Operating Systems Review Live Stream</h4>
+                    <p className="text-[11px] text-slate-500">Saturday, 21 Nov · 02:30 PM</p>
+                  </div>
+                </div>
+                <button type="button" className="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700">Join →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
