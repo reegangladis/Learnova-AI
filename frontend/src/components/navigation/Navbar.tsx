@@ -1,18 +1,15 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Menu,
   Sun,
   Moon,
   Sparkles,
-  BookOpen,
-  ExternalLink,
   LogOut,
-  Key,
-  Users,
+  Bell,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/hooks/useTheme";
-import { useSystemHealth } from "@/hooks/useSystemHealth";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/Badge";
 
@@ -22,11 +19,9 @@ interface NavbarProps {
 
 export function Navbar({ onOpenMobileMenu }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
-  const { backendHealth } = useSystemHealth();
-  const { user, isAuthenticated, logout, hasRole } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-
-  const isHealthy = backendHealth?.status === "ok";
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -38,68 +33,72 @@ export function Navbar({ onOpenMobileMenu }: NavbarProps) {
   };
 
   const getInitials = () => {
-    if (!user) return "U";
-    return `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase();
+    if (!user) return "RG";
+    return `${user.first_name?.[0] || "R"}${user.last_name?.[0] || "G"}`.toUpperCase();
   };
 
+  // Derive breadcrumbs from path
+  const getBreadcrumbs = () => {
+    const path = location.pathname;
+    if (path === "/dashboard") return { section: "Dashboard", sub: "Semester 1" };
+    if (path === "/my-courses" || path === "/my-learning") return { section: "Dashboard", sub: "My courses" };
+    if (path === "/calendar") return { section: "Dashboard", sub: "Calendar" };
+    if (path === "/grades") return { section: "Dashboard", sub: "Grades" };
+    if (path === "/learners") return { section: "ExcelR Operations", sub: "Learners Master" };
+    if (path === "/assignments") return { section: "ExcelR Operations", sub: "Assignments" };
+    if (path === "/projects") return { section: "ExcelR Operations", sub: "Projects & SLA" };
+    if (path === "/certificates") return { section: "ExcelR Operations", sub: "Certificates" };
+    if (path === "/reports") return { section: "ExcelR Operations", sub: "Reports" };
+    if (path === "/integration-health") return { section: "ExcelR Operations", sub: "Integration Health" };
+    return { section: "Learnova", sub: "Platform" };
+  };
+
+  const breadcrumbs = getBreadcrumbs();
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-background/95 px-4 md:px-8 backdrop-blur-md">
-      {/* Left side: Hamburger & Title */}
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/95 px-4 md:px-6 backdrop-blur-md">
+      {/* Left side: Hamburger & Breadcrumbs (Screenshot 4) */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="md:hidden text-slate-700"
           onClick={onOpenMobileMenu}
           aria-label="Toggle Navigation Menu"
         >
           <Menu className="h-5 w-5" />
         </Button>
 
-        <div className="hidden sm:flex items-center gap-3">
-          <Link
-            to="/status"
-            className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                isHealthy ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-              }`}
-            />
-            <span>System:</span>
-            <Badge variant={isHealthy ? "success" : "warning"} className="text-[10px] py-0">
-              {isHealthy ? "Operational" : "Checking..."}
-            </Badge>
-          </Link>
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-500">
+          <span className="hover:text-slate-900 transition-colors">{breadcrumbs.section}</span>
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-900 font-semibold">{breadcrumbs.sub}</span>
+        </nav>
+      </div>
 
-          <span className="text-muted-foreground/40">•</span>
-
-          <Link
-            to="/integration-health"
-            className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-            <span>Track360:</span>
-            <Badge variant="outline" className="text-[10px] py-0 border-indigo-500/40 text-indigo-400">
-              Synced
-            </Badge>
-          </Link>
+      {/* Center: Course Search Input (Screenshot 4) */}
+      <div className="hidden md:flex items-center w-full max-w-sm mx-4">
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search courses... /"
+            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0B374D] focus:bg-white transition-all"
+          />
         </div>
       </div>
 
-      {/* Right side: Actions & Auth */}
-      <div className="flex items-center gap-3">
-        {/* Swagger API Docs link */}
-        <a
-          href="http://localhost:8000/docs"
-          target="_blank"
-          rel="noreferrer"
-          className="hidden lg:inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-muted transition-colors"
+      {/* Right side: Actions & User Avatar (Screenshot 4) */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Ask JO / Ask AI Pill Button (Screenshot 4) */}
+        <button
+          type="button"
+          onClick={() => navigate("/dashboard")}
+          className="bg-[#0B374D] hover:bg-[#0E4663] active:scale-[0.98] text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs transition-all"
         >
-          <BookOpen className="h-3.5 w-3.5" />
-          <span>API Docs (Swagger)</span>
-          <ExternalLink className="h-3 w-3 opacity-60" />
-        </a>
+          <Sparkles className="h-3 w-3 text-amber-400" />
+          <span>Ask JO</span>
+        </button>
 
         {/* Theme switcher */}
         <Button
@@ -107,67 +106,52 @@ export function Navbar({ onOpenMobileMenu }: NavbarProps) {
           size="icon"
           onClick={toggleTheme}
           aria-label="Toggle Theme"
-          className="h-9 w-9 text-muted-foreground hover:text-foreground"
+          className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
         >
-          {theme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-700" />}
+          {theme === "dark" ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4" />}
         </Button>
 
-        {/* Auth Buttons or User Profile Badge */}
-        {isAuthenticated && user ? (
-          <div className="flex items-center gap-3">
-            {hasRole("ADMIN", "SUPER_ADMIN") && (
-              <Link to="/admin/users" className="hidden sm:inline-flex">
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                  <Users className="h-3.5 w-3.5 text-indigo-400" />
-                  <span>Admin Users</span>
-                </Button>
-              </Link>
-            )}
+        {/* Notifications with Count Badge (Screenshot 4: 255) */}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Notifications"
+            className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          >
+            <Bell className="h-4 w-4" />
+          </Button>
+          <Badge className="absolute -top-1 -right-1 h-4 min-w-4 px-1 flex items-center justify-center text-[9px] font-bold bg-rose-500 text-white rounded-full">
+            255
+          </Badge>
+        </div>
 
+        {/* Auth / Profile initials circle */}
+        {isAuthenticated && user ? (
+          <div className="flex items-center gap-2 pl-1 border-l border-slate-200">
             <Link
               to="/profile"
-              className="flex items-center gap-2.5 px-2.5 py-1 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition-colors"
+              title={user.full_name || "Profile"}
+              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center border border-slate-300 transition-colors"
             >
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
-                {getInitials()}
-              </div>
-              <div className="hidden sm:block text-left">
-                <span className="text-xs font-semibold block text-white leading-tight">
-                  {user.first_name}
-                </span>
-                <span className="text-[10px] text-indigo-400 font-mono">
-                  {user.roles[0] || "STUDENT"}
-                </span>
-              </div>
-            </Link>
-
-            <Link to="/security" title="Security & Sessions" className="hidden sm:inline-flex">
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
-                <Key className="h-4 w-4" />
-              </Button>
+              {getInitials()}
             </Link>
 
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={handleLogout}
-              className="text-muted-foreground hover:text-rose-400 gap-1.5"
+              title="Logout"
+              className="h-8 w-8 text-slate-500 hover:text-rose-600 hover:bg-rose-50"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Logout</span>
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
             <Link to="/login">
-              <Button variant="ghost" size="sm">
+              <Button size="sm" className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold text-xs">
                 Sign In
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button size="sm" className="gap-1.5 shadow-xs">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Get Started</span>
               </Button>
             </Link>
           </div>

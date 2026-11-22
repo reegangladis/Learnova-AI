@@ -4,10 +4,10 @@ from backend.app.core.config import Settings
 
 
 def test_settings_defaults():
-    """Verify default configuration attributes for ExcelR Learnova."""
+    """Verify default configuration attributes for Learnova."""
     settings = Settings()
-    assert settings.APP_NAME == "ExcelR Learnova"
-    assert settings.APP_SUBTITLE == "Learning & Progress Platform"
+    assert settings.APP_NAME == "Learnova"
+    assert settings.APP_SUBTITLE == "Learning Platform"
     assert settings.API_V1_PREFIX == "/api/v1"
     assert settings.BACKEND_PORT == 8000
     assert isinstance(settings.CORS_ORIGINS, list)

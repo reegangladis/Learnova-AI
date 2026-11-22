@@ -66,6 +66,10 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
+    await test_engine.dispose()
+    from backend.app.db.session import close_db_engine
+    await close_db_engine()
+
 
 
 class InMemoryRedisClient:

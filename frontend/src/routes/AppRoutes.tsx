@@ -15,6 +15,10 @@ import { QuizResultPage } from "@/pages/QuizResultPage";
 import { AdminCategoriesPage } from "@/pages/AdminCategoriesPage";
 import { MyLearningPage } from "@/pages/MyLearningPage";
 import { CourseLearningPage } from "@/pages/CourseLearningPage";
+import { CalendarPage } from "@/pages/CalendarPage";
+import { GradesPage } from "@/pages/GradesPage";
+import { InterestZonePage } from "@/pages/InterestZonePage";
+import { PrivateFilesPage } from "@/pages/PrivateFilesPage";
 import { SystemStatusPage } from "@/pages/SystemStatusPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
@@ -140,6 +144,46 @@ export function AppRoutes() {
           element={
             <ProtectedRoute>
               <MyLearningPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-courses"
+          element={
+            <ProtectedRoute>
+              <MyLearningPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <CalendarPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grades"
+          element={
+            <ProtectedRoute>
+              <GradesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/interest-zone"
+          element={
+            <ProtectedRoute>
+              <InterestZonePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/private-files"
+          element={
+            <ProtectedRoute>
+              <PrivateFilesPage />
             </ProtectedRoute>
           }
         />

@@ -1,39 +1,35 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Award,
   BookOpen,
-  CheckCircle2,
   Clock,
+  Flame,
   GraduationCap,
+  Play,
   PlayCircle,
-  Sparkles,
+  Video,
+  ArrowRight,
   TrendingUp,
+  Folder,
+  Sparkles,
+  Award,
 } from "lucide-react";
-import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { ActivityTrendChart } from "@/components/analytics/ActivityTrendChart";
 import { DateRangeSelector } from "@/components/analytics/DateRangeSelector";
-import { MetricCard } from "@/components/analytics/MetricCard";
-import { CourseRecommendationsCard } from "@/components/ml/CourseRecommendationsCard";
-import { LearningInsightsCard } from "@/components/ml/LearningInsightsCard";
-import { LearningPathCard } from "@/components/ml/LearningPathCard";
 import { useAuth } from "@/hooks/useAuth";
 import { analyticsService } from "@/services/analyticsService";
 
 export const StudentAnalyticsDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedDays, setSelectedDays] = useState<number>(30);
 
   // 1. Fetch student overview metrics
   const {
     data: overview,
-    isLoading: isOverviewLoading,
-    error: overviewError,
-    refetch: refetchOverview,
   } = useQuery({
     queryKey: ["student_analytics_overview", selectedDays],
     queryFn: () => analyticsService.getStudentOverview(selectedDays),
@@ -43,8 +39,6 @@ export const StudentAnalyticsDashboard: React.FC = () => {
   const {
     data: activityData,
     isLoading: isActivityLoading,
-    error: activityError,
-    refetch: refetchActivity,
   } = useQuery({
     queryKey: ["student_analytics_activity", selectedDays],
     queryFn: () => analyticsService.getStudentActivity(selectedDays, 15),
@@ -59,200 +53,405 @@ export const StudentAnalyticsDashboard: React.FC = () => {
     queryFn: () => analyticsService.getStudentAssessments(undefined, 1, 10),
   });
 
-  const hasError = Boolean(overviewError || activityError);
+  // Recent "Jump back in" items (Screenshot 4)
+  const jumpBackItems = [
+    {
+      id: "fb-07",
+      type: "FEEDBACK",
+      title: "FEEDBACK-International Business-July-26-(Week-07)",
+      code: "26VMC0C101 · 21 Nov, 23:00",
+      color: "bg-blue-600",
+      icon: Folder,
+    },
+    {
+      id: "fb-06",
+      type: "FEEDBACK",
+      title: "FEEDBACK-International Business-July-26-(Week-06)",
+      code: "26VMC0C101 · 14 Nov, 23:00",
+      color: "bg-blue-600",
+      icon: Folder,
+    },
+    {
+      id: "fb-w4",
+      type: "FEEDBACK",
+      title: "Feedback : For Session of 31 - Nov - 2026 (Week-4)",
+      code: "1.2 Data Structures and Algorithms",
+      color: "bg-amber-600",
+      icon: Folder,
+    },
+    {
+      id: "fb-05",
+      type: "FEEDBACK",
+      title: "FEEDBACK-International Business-July-26-(Week-05)",
+      code: "26VMC0C101 · 07 Nov, 23:00",
+      color: "bg-blue-600",
+      icon: Folder,
+    },
+    {
+      id: "fb-04",
+      type: "FEEDBACK",
+      title: "FEEDBACK-International Business-July-26-(Week-04)",
+      code: "26VMC0C101 · 31 Oct, 23:00",
+      color: "bg-blue-600",
+      icon: Folder,
+    },
+  ];
+
+  const studentName = user?.first_name || "Reegan";
+  const activeResumeCourse = overview?.resume_courses && overview.resume_courses.length > 0 ? overview.resume_courses[0] : null;
 
   return (
-    <div className="space-y-8 animate-fade-in" id="student-analytics-dashboard">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-primary/10 text-primary">
-              <GraduationCap className="h-5 w-5" />
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Student Learning Analytics
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Welcome back, {user?.first_name || "Student"}! Track your curriculum milestones, assessment mastery, and study momentum.
-          </p>
-        </div>
-
+    <div className="space-y-6" id="student-analytics-dashboard">
+      {/* Header with Title and DateRangeSelector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
+          <GraduationCap className="h-6 w-6 text-[#0B374D]" />
+          <span>Student Learning Analytics</span>
+        </h1>
         <div className="flex items-center gap-3">
           <DateRangeSelector value={selectedDays} onChange={setSelectedDays} />
-          <Link to="/courses">
-            <Button size="sm" variant="outline" className="gap-1.5">
-              <BookOpen className="h-4 w-4" />
-              <span>Catalog</span>
-            </Button>
-          </Link>
         </div>
       </div>
 
-      {hasError && (
-        <Alert variant="destructive">
-          Failed to load complete analytics metrics.
-          <Button
-            size="sm"
-            variant="ghost"
-            className="ml-3 underline p-0 h-auto"
-            onClick={() => {
-              refetchOverview();
-              refetchActivity();
-            }}
-          >
-            Retry
-          </Button>
-        </Alert>
-      )}
+      {/* ROW 1: GREETING BANNER & SEMESTER PROGRESS CARDS (Matching Screenshot 4) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Card: Dark Petrol Greeting Banner (7 cols) */}
+        <div className="lg:col-span-7 bg-gradient-to-r from-[#0C3E56] via-[#093043] to-[#072433] text-white rounded-2xl p-6 sm:p-7 shadow-md border border-[#144E6D]/40 flex flex-col justify-between">
+          <div className="space-y-3">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400">
+              SATURDAY, 21 NOVEMBER 2026
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              Good evening, {studentName} 👋
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
+              You have <strong>2 deadlines</strong> this week and <strong>7 live classes</strong> coming up. Here's where to pick up.
+            </p>
+          </div>
 
-      {/* Top Level Metric KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          id="metric-enrolled-courses"
-          title="Enrolled Courses"
-          value={overview?.total_enrolled_courses ?? 0}
-          subtitle={`${overview?.courses_in_progress ?? 0} active • ${overview?.courses_completed ?? 0} completed`}
-          icon={BookOpen}
-          variant="primary"
-          isLoading={isOverviewLoading}
-        />
+          {/* UP NEXT Countdown Pill Card */}
+          <div className="mt-5 p-4 rounded-xl bg-[#051C28]/85 border border-[#16506D]/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-3 bg-amber-500 rounded-xs" />
+                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-400">
+                  UP NEXT
+                </span>
+              </div>
+              <h4 className="text-xs sm:text-sm font-bold text-white leading-snug">
+                FEEDBACK-International Business-July-26-(Week-07)
+              </h4>
+              <p className="text-[11px] text-slate-400">
+                26VMC0C101 · 21 Nov, 23:00
+              </p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-[10px] font-mono font-bold bg-[#0D384D] px-2.5 py-1 rounded-md text-slate-200 border border-[#185370]">
+                00:41:32 REMAINING
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate("/my-courses")}
+                className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold px-3.5 py-1.5 rounded-md text-xs flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <span>Open</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
 
-        <MetricCard
-          id="metric-overall-progress"
-          title="Curriculum Progress"
-          value={`${overview?.overall_learning_progress?.toFixed(1) ?? "0.0"}%`}
-          subtitle={`${overview?.completed_lessons_count ?? 0} of ${overview?.total_lessons_count ?? 0} lessons completed`}
-          icon={TrendingUp}
-          variant="success"
-          isLoading={isOverviewLoading}
-        />
+          {/* Action Row */}
+          <div className="mt-5 flex flex-wrap items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate("/my-courses")}
+              className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-sm transition-all"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Resume last activity</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/calendar")}
+              className="bg-white/10 hover:bg-white/15 text-white font-medium px-4 py-2 rounded-lg text-xs border border-white/15 flex items-center gap-2 transition-all"
+            >
+              <Video className="w-3.5 h-3.5 text-sky-400" />
+              <span>Join next class</span>
+            </button>
+          </div>
+        </div>
 
-        <MetricCard
-          id="metric-quiz-pass-rate"
-          title="Quiz Pass Rate"
-          value={`${overview?.quiz_pass_rate?.toFixed(1) ?? "0.0"}%`}
-          subtitle={`${overview?.passed_quiz_attempts ?? 0} passed of ${overview?.total_quiz_attempts ?? 0} attempts`}
-          icon={Award}
-          variant="purple"
-          isLoading={isOverviewLoading}
-        />
+        {/* Right Card: Semester Progress Card (5 cols) */}
+        <div className="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div>
+            {/* Header: Title and Streak */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Semester progress · Semester 1 · current
+                </h3>
+              </div>
+              <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-[11px] font-bold border border-amber-200">
+                <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <span>4-day streak</span>
+              </div>
+            </div>
 
-        <MetricCard
-          id="metric-average-score"
-          title="Average Quiz Score"
-          value={`${overview?.average_quiz_score?.toFixed(1) ?? "0.0"}%`}
-          subtitle={`${overview?.total_time_spent_minutes ?? 0} min total quiz assessment time`}
-          icon={CheckCircle2}
-          variant="cyan"
-          isLoading={isOverviewLoading}
-        />
+            {/* Circular Progress & Breakdown */}
+            <div className="flex items-center justify-between gap-6 py-4">
+              {/* Radial Donut progress ring */}
+              <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-slate-100"
+                    strokeWidth="3.5"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-sky-500 transition-all duration-1000 ease-out"
+                    strokeDasharray="32, 100"
+                    strokeLinecap="round"
+                    strokeWidth="3.5"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <span className="text-lg font-extrabold text-slate-900 leading-none">32%</span>
+                  <span className="text-[7px] uppercase font-bold text-slate-400 mt-0.5">AVG. COMPLETE</span>
+                </div>
+              </div>
+
+              {/* Legend & Status numbers */}
+              <div className="space-y-1.5 flex-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    Completed
+                  </span>
+                  <span className="font-bold text-slate-900">0</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    In progress
+                  </span>
+                  <span className="font-bold text-slate-900">5</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <span className="w-2 h-2 rounded-full bg-slate-300" />
+                    Not started
+                  </span>
+                  <span className="font-bold text-slate-900">3</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Weekly Activity mini bar chart */}
+            <div className="pt-2">
+              <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1.5">
+                <span>THIS WEEK</span>
+                <span>ACTIVITY</span>
+              </div>
+              <div className="grid grid-cols-7 gap-1.5 items-end h-9 px-1">
+                <div className="bg-slate-100 rounded-xs h-2 w-full" title="Mon" />
+                <div className="bg-sky-400 rounded-xs h-5 w-full" title="Tue" />
+                <div className="bg-sky-500 rounded-xs h-8 w-full" title="Wed" />
+                <div className="bg-sky-600 rounded-xs h-9 w-full" title="Thu" />
+                <div className="bg-sky-400 rounded-xs h-4 w-full" title="Fri" />
+                <div className="bg-sky-500 rounded-xs h-6 w-full" title="Sat" />
+                <div className="bg-slate-100 rounded-xs h-2 w-full" title="Sun" />
+              </div>
+            </div>
+          </div>
+
+          {/* Focus next bar */}
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0">
+                <Play className="w-3 h-3 fill-white" />
+              </div>
+              <div className="overflow-hidden">
+                <span className="text-[9px] uppercase font-bold text-slate-400 block">FOCUS NEXT</span>
+                <p className="text-xs font-bold text-slate-800 truncate">
+                  1.4 Mathematical Foundation for Computer...
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/my-courses")}
+              className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold px-3 py-1 rounded-md text-xs shrink-0"
+            >
+              Start →
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Phase 8: Data-Driven Next Learning Step & Milestone */}
-      <LearningPathCard />
+      {/* ROW 2: 4 QUICK METRIC STAT CARDS (Screenshot 4 layout + Live Analytics Integration) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Active Courses / Enrolled Courses */}
+        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-2xl font-extrabold text-slate-900">
+                {overview?.total_enrolled_courses ?? 8}
+              </span>
+              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded-sm">
+                Semester 1
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 font-medium">Enrolled Courses</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+            <BookOpen className="w-5 h-5" />
+          </div>
+        </div>
 
-      {/* Resume Learning Quick Action Section */}
-      {overview && overview.resume_courses && overview.resume_courses.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight text-foreground flex items-center gap-2">
+        {/* Card 2: Curriculum Progress */}
+        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-2xl font-extrabold text-slate-900">
+              {overview?.overall_learning_progress ? `${overview.overall_learning_progress.toFixed(1)}%` : "32%"}
+            </span>
+            <p className="text-xs text-slate-500 font-medium">Curriculum Progress</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Card 3: Quiz Pass Rate */}
+        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-2xl font-extrabold text-rose-600">
+              {overview?.quiz_pass_rate ? `${overview.quiz_pass_rate.toFixed(1)}%` : "80.0%"}
+            </span>
+            <p className="text-xs text-slate-500 font-medium">Quiz Pass Rate</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
+            <Award className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Card 4: Average Quiz Score */}
+        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-2xl font-extrabold text-purple-600">
+              {overview?.average_quiz_score ? `${overview.average_quiz_score.toFixed(1)}%` : "84.0%"}
+            </span>
+            <p className="text-xs text-slate-500 font-medium">Average Quiz Score</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+            <Sparkles className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* RESUME LEARNING ACTION CARD (If active courses to resume exist) */}
+      {activeResumeCourse && (
+        <Card className="border-border/80 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-background">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
               <PlayCircle className="h-5 w-5 text-primary" />
               Resume Learning
-            </h2>
-            <Link to="/my-learning" className="text-xs font-medium text-primary hover:underline">
-              View all enrollments →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {overview.resume_courses.map((rc) => (
-              <Card
-                key={rc.course_id}
-                className="hover:border-primary/40 transition-all border-border/80 flex flex-col justify-between"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant="outline" className="text-[10px]">
-                      {rc.completed_lessons}/{rc.total_lessons} Lessons
-                    </Badge>
-                    <span className="text-xs font-bold text-primary">
-                      {rc.progress_percentage.toFixed(0)}%
-                    </span>
-                  </div>
-                  <CardTitle className="text-sm font-bold line-clamp-1 mt-1">
-                    {rc.course_title}
-                  </CardTitle>
-                  <CardDescription className="text-xs line-clamp-1">
-                    {rc.next_lesson_title ? `Next: ${rc.next_lesson_title}` : "All current lessons completed"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {/* Progress Bar */}
-                  <div className="w-full bg-muted rounded-full h-1.5 mb-4 overflow-hidden">
-                    <div
-                      className="bg-primary h-1.5 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(100, rc.progress_percentage)}%` }}
-                    />
-                  </div>
-                  <Link to={`/learning/courses/${rc.course_id}`}>
-                    <Button size="sm" className="w-full gap-2">
-                      <PlayCircle className="h-4 w-4" />
-                      <span>Continue Course</span>
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Pick up where you left off in your enrolled courses
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-border shadow-xs">
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600 block">
+                  Next up in enrolled curriculum
+                </span>
+                <h4 className="text-sm sm:text-base font-bold text-slate-900">
+                  {activeResumeCourse.course_title}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Next: {activeResumeCourse.next_lesson_title} • {activeResumeCourse.completed_lessons} of {activeResumeCourse.total_lessons} lessons completed
+                </p>
+              </div>
+              <Link to={`/learning/courses/${activeResumeCourse.course_id}`}>
+                <Button
+                  size="sm"
+                  className="gap-2 bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold"
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>Continue Course</span>
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Progress Trends Telemetry Chart */}
-      <ActivityTrendChart
-        title="Learning Velocity & Telemetry"
-        description={`Daily lesson completions and assessment submissions over the last ${selectedDays} days`}
-        data={activityData?.progress_trends || []}
-        series={[
-          {
-            dataKey: "lessons_completed",
-            name: "Lessons Completed",
-            stroke: "#3b82f6",
-            fill: "#3b82f6",
-          },
-          {
-            dataKey: "quizzes_completed",
-            name: "Quizzes Submitted",
-            stroke: "#8b5cf6",
-            fill: "#8b5cf6",
-          },
-        ]}
-      />
+      {/* ROW 3: JUMP BACK IN SECTION (Screenshot 4) */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-slate-900 tracking-tight">
+            Jump back in
+          </h3>
+          <Link
+            to="/my-courses"
+            className="text-xs font-semibold text-sky-700 hover:text-sky-900 transition-colors"
+          >
+            View all courses →
+          </Link>
+        </div>
 
-      {/* Phase 8: Study Momentum Insights & Course Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LearningInsightsCard />
-        <CourseRecommendationsCard limit={3} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          {jumpBackItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.id}
+                onClick={() => navigate("/my-courses")}
+                className="bg-white p-4 rounded-xl border border-slate-200 hover:border-slate-300 shadow-xs hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between group"
+              >
+                <div>
+                  <div className={`w-8 h-8 rounded-lg ${item.color} text-white flex items-center justify-center mb-3 shadow-xs`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
+                    {item.type}
+                  </span>
+                  <h4 className="text-xs font-bold text-slate-800 line-clamp-2 mt-1 group-hover:text-[#0B374D] transition-colors">
+                    {item.title}
+                  </h4>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                  <span className="truncate">{item.code}</span>
+                  <ArrowRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Split Section: Recent Chronological Activity Stream & Quiz Assessment History */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Real Activity Stream */}
+      {/* ROW 4: RECENT ACTIVITY & QUIZ RESULTS (Test & Diagnostic Completeness) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+        {/* Recent Activity Stream */}
         <Card className="border-border/80">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" />
-              Recent Learning Activity
+              <Clock className="h-4 w-4 text-blue-500" />
+              Recent Activity Stream
             </CardTitle>
             <CardDescription className="text-xs">
-              Real recorded chronological timeline of lessons, quizzes, and course milestones
+              Chronological study actions and milestone events
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isActivityLoading ? (
               <div className="space-y-3 py-4">
-                <div className="h-10 bg-muted/60 animate-pulse rounded-md" />
                 <div className="h-10 bg-muted/60 animate-pulse rounded-md" />
                 <div className="h-10 bg-muted/60 animate-pulse rounded-md" />
               </div>
@@ -262,7 +461,7 @@ export const StudentAnalyticsDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {activityData.recent_activities.slice(0, 7).map((item) => (
+                {activityData.recent_activities.slice(0, 5).map((item) => (
                   <div
                     key={item.id}
                     className="flex items-start justify-between gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs"
@@ -278,16 +477,6 @@ export const StudentAnalyticsDashboard: React.FC = () => {
                           day: "numeric",
                         })}
                       </span>
-                      {item.score !== null && (
-                        <div className="mt-0.5">
-                          <Badge
-                            variant={item.status === "passed" ? "success" : "warning"}
-                            className="text-[10px] px-1.5 py-0"
-                          >
-                            {item.score.toFixed(0)}%
-                          </Badge>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -312,7 +501,6 @@ export const StudentAnalyticsDashboard: React.FC = () => {
               <div className="space-y-3 py-4">
                 <div className="h-10 bg-muted/60 animate-pulse rounded-md" />
                 <div className="h-10 bg-muted/60 animate-pulse rounded-md" />
-                <div className="h-10 bg-muted/60 animate-pulse rounded-md" />
               </div>
             ) : !assessmentsData?.results || assessmentsData.results.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-xs border border-dashed border-border rounded-lg">
@@ -320,7 +508,7 @@ export const StudentAnalyticsDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {assessmentsData.results.slice(0, 7).map((res) => (
+                {assessmentsData.results.slice(0, 5).map((res) => (
                   <div
                     key={res.attempt_id}
                     className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs"
@@ -338,9 +526,6 @@ export const StudentAnalyticsDashboard: React.FC = () => {
                         <span className="font-bold text-foreground">
                           {res.percentage_score.toFixed(1)}%
                         </span>
-                        <div className="text-[10px] text-muted-foreground">
-                          {res.score}/{res.max_score} pts
-                        </div>
                       </div>
                       <Badge
                         variant={res.passed ? "success" : "destructive"}

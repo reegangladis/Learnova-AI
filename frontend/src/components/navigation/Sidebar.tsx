@@ -2,23 +2,23 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
+  Calendar,
+  Award,
+  Sparkles,
+  FolderKanban,
+  Users,
+  CheckSquare,
+  Layers,
+  BarChart3,
   Activity,
-  GraduationCap,
-  Home,
+  PlusCircle,
+  HelpCircle,
   User,
   Key,
-  Users,
-  Layers,
+  LifeBuoy,
   Tag,
-  PlusCircle,
-  ShieldCheck,
-  HelpCircle,
-  BarChart3,
-  TrendingUp,
-  FolderKanban,
-  Award,
   Server,
-  CheckSquare,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
@@ -35,19 +35,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navigation = [
     {
-      title: "Learning Platform",
+      title: "Navigation",
       items: [
-        { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-        ...(isAuthenticated
-          ? [
-              { name: "My Learning", href: "/my-learning", icon: GraduationCap },
-              { name: "Learning Analytics", href: "/analytics/student", icon: TrendingUp },
-            ]
-          : []),
-        { name: "Courses Catalog", href: "/courses", icon: BookOpen },
-        { name: "Showcase Landing", href: "/", icon: Home },
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { name: "My Courses", href: "/my-courses", icon: BookOpen },
+        { name: "Calendar", href: "/calendar", icon: Calendar },
+        { name: "Grades", href: "/grades", icon: Award },
+        { name: "Interest Zone", href: "/interest-zone", icon: Sparkles },
       ],
     },
+    {
+      title: "RESOURCES",
+      items: [
+        { name: "Private Files", href: "/private-files", icon: FolderKanban },
+      ],
+    },
+    // ExcelR Operations (Track360) - PRESERVED UNTOUCHED AS REQUESTED
     ...(isAuthenticated
       ? [
           {
@@ -55,49 +58,45 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             items: [
               { name: "Learners Master", href: "/learners", icon: Users, badge: "Master" },
               { name: "Assignments", href: "/assignments", icon: CheckSquare, badge: "Grading" },
-              { name: "Projects & SLA", href: "/projects", icon: FolderKanban, badge: "15d SLA" },
+              { name: "Projects & SLA", href: "/projects", icon: Layers, badge: "15d SLA" },
               { name: "Certificates", href: "/certificates", icon: Award, badge: "2-Stage" },
               { name: "Operational Reports", href: "/reports", icon: BarChart3, badge: "Sync" },
+              { name: "Track360 Integration", href: "/integration-health", icon: Activity, badge: "Live" },
             ],
           },
         ]
       : []),
+    // Authoring Studio for Instructors & Admins
     ...(isAuthenticated && hasRole("INSTRUCTOR", "ADMIN", "SUPER_ADMIN")
       ? [
           {
             title: "Authoring Studio",
             items: [
               { name: "Instructor Studio", href: "/instructor/courses", icon: Layers },
-              { name: "Instructor Analytics", href: "/instructor/analytics", icon: BarChart3 },
               { name: "Create Course", href: "/instructor/courses/new", icon: PlusCircle },
               { name: "Quizzes", href: "/instructor/quizzes", icon: HelpCircle },
             ],
           },
         ]
       : []),
+    // Administration
     ...(isAuthenticated && hasRole("ADMIN", "SUPER_ADMIN")
       ? [
           {
             title: "Administration",
             items: [
               { name: "User Management", href: "/admin/users", icon: Users, badge: "RBAC" },
-              { name: "Admin Analytics", href: "/admin/analytics", icon: BarChart3, badge: "Metrics" },
               { name: "Course Categories", href: "/admin/categories", icon: Tag },
+              { name: "System Services", href: "/status", icon: Server },
             ],
           },
         ]
       : []),
-    {
-      title: "System & Integration",
-      items: [
-        { name: "Track360 Integration", href: "/integration-health", icon: Activity, badge: "Live" },
-        { name: "System Services", href: "/status", icon: Server },
-      ],
-    },
+    // Account & Security
     ...(isAuthenticated
       ? [
           {
-            title: "Identity & Security",
+            title: "Identity & Account",
             items: [
               { name: "My Profile", href: "/profile", icon: User },
               { name: "Security & Sessions", href: "/security", icon: Key },
@@ -112,38 +111,38 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Sidebar Container (Deep Petrol Blue matching Screenshot 4) */}
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-card transition-transform duration-200 ease-in-out md:translate-x-0",
+          "fixed top-0 bottom-0 left-0 z-40 flex w-64 flex-col border-r border-[#0D3B52] bg-[#072331] text-slate-300 transition-transform duration-200 ease-in-out md:translate-x-0 shadow-xl",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Brand Header */}
-        <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+        <div className="flex h-16 items-center gap-3 border-b border-[#0D3B52]/80 px-6 bg-[#061F2C]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-amber-400 border border-white/10 shadow-xs">
             <GraduationCap className="h-5 w-5" />
           </div>
           <div>
-            <span className="font-bold text-base tracking-tight text-foreground flex items-center gap-1.5">
-              ExcelR <span className="text-primary font-black">Learnova</span>
+            <span className="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+              Learnova
             </span>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
-              Learning &amp; Progress
+            <p className="text-[10px] text-amber-400/80 uppercase tracking-widest font-semibold">
+              Online LMS
             </p>
           </div>
         </div>
 
         {/* User Identity Pill (if logged in) */}
         {isAuthenticated && user && (
-          <div className="px-4 pt-4">
-            <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 text-indigo-400 font-bold text-xs flex items-center justify-center">
+          <div className="px-4 pt-3.5 pb-1">
+            <div className="p-2.5 rounded-xl bg-[#092D3E] border border-[#0F4A68]/60 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-[#0E4663] text-amber-300 font-bold text-xs flex items-center justify-center border border-[#165E85]">
                 {user.first_name?.[0]}
                 {user.last_name?.[0]}
               </div>
@@ -156,17 +155,19 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
           {navigation.map((section, idx) => (
-            <div key={idx} className="space-y-1.5">
+            <div key={idx} className="space-y-1">
               {section.title && (
-                <p className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <p className="px-3 text-[10px] font-bold text-slate-400/80 uppercase tracking-wider">
                   {section.title}
                 </p>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {section.items.map((item) => {
-                  const isActive = location.pathname === item.href;
+                  const isActive =
+                    location.pathname === item.href ||
+                    (item.href === "/my-courses" && location.pathname === "/my-learning");
                   const Icon = item.icon;
                   return (
                     <NavLink
@@ -174,20 +175,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       to={item.href}
                       onClick={onClose}
                       className={cn(
-                        "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                        "flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors",
                         isActive
-                          ? "bg-primary text-primary-foreground shadow-xs"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          ? "bg-[#0F4C6B] text-white shadow-xs font-semibold border-l-2 border-[#E59819]"
+                          : "text-slate-300 hover:bg-[#0A3246] hover:text-white"
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className={cn("h-4 w-4", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+                        <Icon className={cn("h-4 w-4", isActive ? "text-amber-400" : "text-slate-400")} />
                         <span>{item.name}</span>
                       </div>
                       {item.badge && (
                         <Badge
                           variant={isActive ? "secondary" : "default"}
-                          className="text-[10px] px-1.5 py-0"
+                          className="text-[9px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-300 border-amber-500/30"
                         >
                           {item.badge}
                         </Badge>
@@ -200,22 +201,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </div>
 
-        {/* Architectural Footer Pill */}
-        <div className="p-4 border-t border-border bg-muted/30">
-          <div className="rounded-lg border border-border bg-card p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-                Track360 Synced
-              </span>
-              <span className="text-[10px] text-muted-foreground font-mono">v1.0-ExcelR</span>
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span>Operational Master</span>
-              <span>•</span>
-              <span className="text-emerald-500 font-medium">Authoritative</span>
-            </div>
-          </div>
+        {/* Bottom "Need help?" Pill Button (Matching Screenshot 4) */}
+        <div className="p-4 border-t border-[#0D3B52]/80 bg-[#061F2C]">
+          <button
+            type="button"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3.5 rounded-full bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
+          >
+            <LifeBuoy className="h-4 w-4" />
+            <span>Need help?</span>
+          </button>
         </div>
       </aside>
     </>

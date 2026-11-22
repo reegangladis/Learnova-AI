@@ -209,7 +209,21 @@ class Track360Client:
                     params=params,
                 )
                 if res.status_code == 200:
-                    return AssignmentSubmissionsPaginated(**res.json())
+                    data = res.json()
+                    status_map = {
+                        "APPROVED": "Done",
+                        "DONE": "Done",
+                        "CORRECTIONS_REQUESTED": "Redo",
+                        "REDO": "Redo",
+                        "SUBMITTED": "Submitted",
+                        "LATE_SUBMITTED": "Submitted",
+                        "NOT_SUBMITTED": "Not submitted",
+                    }
+                    for item in data.get("items", []):
+                        raw_status = item.get("current_submission_status")
+                        if raw_status in status_map:
+                            item["current_submission_status"] = status_map[raw_status]
+                    return AssignmentSubmissionsPaginated(**data)
         except Exception as exc:
             logger.warning(f"Live Track360 assignments lookup failed: {exc}")
 
@@ -387,7 +401,18 @@ class Track360Client:
                     params=params,
                 )
                 if res.status_code == 200:
-                    return CertificateListResponse(**res.json())
+                    data = res.json()
+                    for item in data.get("items", []):
+                        raw_type = item.get("certificate_type")
+                        if (
+                            raw_type in ("MILESTONE", "INTERNSHIP_EXPERIENCE")
+                            or (item.get("accredited_duration_months") or 0) > 0
+                            or item.get("internship_record_id")
+                        ):
+                            item["certificate_type"] = "INTERNSHIP_EXPERIENCE"
+                        else:
+                            item["certificate_type"] = "COURSE_COMPLETION"
+                    return CertificateListResponse(**data)
         except Exception as exc:
             logger.warning(f"Live Track360 certificates lookup failed: {exc}")
 

@@ -88,3 +88,5 @@ infrastructure/backups/*
 *.sqlite3
 *.pkl
 scratch/
+.vite/
+models_store/

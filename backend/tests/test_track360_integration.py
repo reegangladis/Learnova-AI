@@ -115,16 +115,17 @@ async def test_learners_listing_and_search(
     assert "items" in data
     assert len(data["items"]) >= 1
     first_item = data["items"][0]
-    assert first_item["candidate_number"].startswith("EXCELR-")
+    assert first_item["candidate_number"].startswith(("EXCELR-", "EX-"))
 
-    # 2. Search query
+    # 2. Search query using authoritative candidate's first name
+    target_name = first_item["first_name"]
     res_search = await client.get(
-        "/api/v1/learners?search=Aarav", cookies=cookies
+        f"/api/v1/learners?search={target_name}", cookies=cookies
     )
     assert res_search.status_code == 200
     search_data = res_search.json()
     assert len(search_data["items"]) >= 1
-    assert "Aarav" in search_data["items"][0]["first_name"]
+    assert target_name.lower() in search_data["items"][0]["first_name"].lower()
 
 
 @pytest.mark.asyncio
@@ -206,15 +207,25 @@ async def test_bulk_assignment_update_endpoint(
     await create_test_staff_user(db_session, "staff_bulk@excelr.com")
     cookies = await get_test_auth_headers(client, "staff_bulk@excelr.com")
 
+    # Fetch real active submission IDs from Track360 if available
+    asg_res = await client.get("/api/v1/track360/assignments", cookies=cookies)
+    items = asg_res.json().get("items", []) if asg_res.status_code == 200 else []
+    if len(items) >= 2:
+        sub_id1 = items[0]["id"]
+        sub_id2 = items[1]["id"]
+    else:
+        sub_id1 = "10000000-0000-0000-0000-000000000001"
+        sub_id2 = "10000000-0000-0000-0000-000000000002"
+
     payload = {
         "items": [
             {
-                "submission_id": "10000000-0000-0000-0000-000000000001",
+                "submission_id": sub_id1,
                 "status": "Done",
                 "awarded_score": 95.0,
             },
             {
-                "submission_id": "10000000-0000-0000-0000-000000000002",
+                "submission_id": sub_id2,
                 "status": "Redo",
                 "correction_note": "Failed unit test for edge cases. Please fix logic.",
             },

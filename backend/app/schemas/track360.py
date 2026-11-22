@@ -172,10 +172,10 @@ class ProjectGroupMemberItem(BaseModel):
 class ProjectGroupItem(BaseModel):
     id: uuid.UUID
     group_name: str
-    project_code: str
-    project_title: str
+    project_code: Optional[str] = None
+    project_title: Optional[str] = None
     batch_code: Optional[str] = None
-    group_status: str = Field(..., description="ALLOCATED, IN_PROGRESS, COMPLETED, DROPPED")
+    group_status: str = Field(..., description="FORMING, ACTIVE, LOCKED, COMPLETED, DISSOLVED, ALLOCATED, IN_PROGRESS, DROPPED")
     mentor_name: Optional[str] = None
     current_milestone: Optional[str] = None
     drop_reason: Optional[str] = None
@@ -224,7 +224,7 @@ class CertificateItem(BaseModel):
     id: uuid.UUID
     candidate_id: uuid.UUID
     candidate_name: str
-    candidate_number: str
+    candidate_number: Optional[str] = None
     certificate_type: str = Field(..., description="COURSE_COMPLETION or INTERNSHIP_EXPERIENCE")
     course_or_track_title: str
     accredited_duration_months: Optional[int] = None
@@ -232,7 +232,7 @@ class CertificateItem(BaseModel):
     status: str = Field(..., description="DRAFT, PENDING_STAGE2, ISSUED, REVOKED")
     stage1_approved: bool = False
     stage2_approved: bool = False
-    issue_date: Optional[datetime] = None
+    issue_date: Optional[Any] = None
     verification_url: Optional[str] = None
     qr_code_available: bool = False
 
@@ -242,7 +242,7 @@ class CertificateListResponse(BaseModel):
     total: int
     page: int
     page_size: int
-    total_pages: int
+    total_pages: int = 1
 
 
 # ==============================================================================

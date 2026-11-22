@@ -13,10 +13,10 @@ class Settings(BaseSettings):
 
     # App Identity
     APP_NAME: str = Field(
-        default="ExcelR Learnova", description="Application name"
+        default="Learnova", description="Application name"
     )
     APP_SUBTITLE: str = Field(
-        default="Learning & Progress Platform",
+        default="Learning Platform",
         description="Platform subtitle",
     )
     APP_ENV: str = Field(
