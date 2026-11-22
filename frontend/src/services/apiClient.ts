@@ -1,4 +1,5 @@
 import { APIErrorDetails } from "@/types/api";
+import { tryDemoFallback } from "./demoFallback";
 
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
@@ -18,6 +19,12 @@ export class APIClientError extends Error {
     this.status = status;
     this.details = details;
   }
+}
+
+function isStaticOrCloudHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host.includes("vercel.app") || host.includes("netlify.app");
 }
 
 type AuthCallback = () => void;
@@ -87,6 +94,37 @@ class APIClient {
   public async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const { timeoutMs = 15000, params, headers, _isRetry, ...customConfig } = options;
 
+    // Parse body if present for fallback checks
+    const parseBody = () => {
+      if (!customConfig.body) return undefined;
+      if (typeof customConfig.body === "string") {
+        try {
+          return JSON.parse(customConfig.body);
+        } catch {
+          return customConfig.body;
+        }
+      }
+      return customConfig.body;
+    };
+
+    // On static hosting (e.g. Vercel), handle mock endpoints directly without sending 405 requests
+    if (isStaticOrCloudHost()) {
+      try {
+        const directFallback = tryDemoFallback<T>(path, {
+          method: customConfig.method,
+          body: parseBody(),
+          params: params as Record<string, unknown>,
+        });
+        if (directFallback !== null) {
+          return directFallback;
+        }
+      } catch (directErr) {
+        if (directErr instanceof APIClientError) {
+          throw directErr;
+        }
+      }
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -152,6 +190,24 @@ class APIClient {
       }
 
       if (!response.ok) {
+        // Fallback for static hosts (e.g. Vercel) where API routes return 405 Method Not Allowed or 404
+        if (response.status === 405 || response.status === 404) {
+          try {
+            const fallback = tryDemoFallback<T>(path, {
+              method: customConfig.method,
+              body: parseBody(),
+              params: params as Record<string, unknown>,
+            });
+            if (fallback !== null) {
+              return fallback;
+            }
+          } catch (fallbackErr) {
+            if (fallbackErr instanceof APIClientError) {
+              throw fallbackErr;
+            }
+          }
+        }
+
         let errorCode = `HTTP_${response.status}`;
         let errorMessage = response.statusText || "Request failed";
         let errorDetails: unknown = undefined;
@@ -176,6 +232,22 @@ class APIClient {
 
       if (error instanceof APIClientError) {
         throw error;
+      }
+
+      // Check if fallback can resolve network error
+      try {
+        const fallback = tryDemoFallback<T>(path, {
+          method: customConfig.method,
+          body: parseBody(),
+          params: params as Record<string, unknown>,
+        });
+        if (fallback !== null) {
+          return fallback;
+        }
+      } catch (fallbackErr) {
+        if (fallbackErr instanceof APIClientError) {
+          throw fallbackErr;
+        }
       }
 
       if ((error as { name?: string }).name === "AbortError") {
