@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Sparkles,
   Award,
+  Bot,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +21,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DateRangeSelector } from "@/components/analytics/DateRangeSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { analyticsService } from "@/services/analyticsService";
+import { CourseRecommendationsCard } from "@/components/ml/CourseRecommendationsCard";
+import { LearningPathCard } from "@/components/ml/LearningPathCard";
+import { LearningInsightsCard } from "@/components/ml/LearningInsightsCard";
 
 export const StudentAnalyticsDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -346,6 +350,51 @@ export const StudentAnalyticsDashboard: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* AI & ML INTELLIGENCE HUB (Copilot + RAG + Recommendation Engine) */}
+      <div className="space-y-5 pt-2">
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-md text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-md bg-indigo-500/20 text-cyan-300">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <span className="text-[11px] uppercase font-bold tracking-wider text-cyan-300">
+                AI &amp; Machine Learning Intelligence Hub
+              </span>
+              <span className="text-[10px] font-mono font-bold bg-white/10 px-2 py-0.5 rounded-full text-slate-300 border border-white/15">
+                FAISS Vector Store • 1,240 Chunks Indexed
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-extrabold text-white">
+              AI Study Copilot &amp; Personalized Learning Paths
+            </h3>
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Query indexed course slide decks with LangChain RAG &amp; source citations, backed by gradient-boosted ML models predicting your optimal curriculum next steps and skill gap remediation.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("open-ai-copilot"))}
+              className="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer hover:scale-105 active:scale-95"
+            >
+              <Bot className="w-4 h-4 text-cyan-300" />
+              <span>Launch AI Copilot</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* 2-Column ML Cards: Next Learning Step & Learning Insights */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <LearningPathCard />
+          <LearningInsightsCard />
+        </div>
+
+        {/* ML Personalized Course Recommendations */}
+        <CourseRecommendationsCard limit={3} />
+      </div>
 
       {/* ROW 3: COMPREHENSIVE SAMPLE COURSES (Modules, Video, PPT, Self-Assessments, Quizzes) */}
       <div className="space-y-4 pt-2">

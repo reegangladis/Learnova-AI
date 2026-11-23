@@ -15,9 +15,10 @@ import { Badge } from "@/components/ui/Badge";
 
 interface NavbarProps {
   onOpenMobileMenu: () => void;
+  onOpenCopilot?: () => void;
 }
 
-export function Navbar({ onOpenMobileMenu }: NavbarProps) {
+export function Navbar({ onOpenMobileMenu, onOpenCopilot }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -96,8 +97,9 @@ export function Navbar({ onOpenMobileMenu }: NavbarProps) {
         {/* Learnova AI Assistant Pill Button */}
         <button
           type="button"
-          onClick={() => navigate("/dashboard")}
-          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.98] text-white text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition-all"
+          onClick={onOpenCopilot ? onOpenCopilot : () => navigate("/dashboard")}
+          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.98] text-white text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition-all cursor-pointer"
+          title="Open AI Study Copilot (RAG • FAISS)"
         >
           <Sparkles className="h-3.5 w-3.5 text-cyan-300" />
           <span>Learnova AI</span>
