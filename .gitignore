@@ -70,7 +70,8 @@ Thumbs.db
 desktop.ini
 
 # Docker & Database local data
-data/
+/data/
+!frontend/src/data/
 pgdata/
 redisdata/
 mlruns/

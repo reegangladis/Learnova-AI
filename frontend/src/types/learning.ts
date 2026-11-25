@@ -47,6 +47,13 @@ export interface CourseProgress {
   is_course_completed: boolean;
 }
 
+export interface SlideDeckItem {
+  slide_number: number;
+  title: string;
+  content: string;
+  key_takeaways?: string[];
+}
+
 export interface LearningLesson {
   id: string;
   module_id: string;
@@ -62,6 +69,9 @@ export interface LearningLesson {
   completed_at: string | null;
   playback_position_seconds?: number;
   playback_duration_seconds?: number;
+  presentation_notes?: string | null;
+  slides?: SlideDeckItem[];
+  metadata_json?: Record<string, unknown>;
 }
 
 export interface LearningModule {
@@ -91,6 +101,18 @@ export interface LearningCourse {
   enrollment_status: string;
   enrolled_at: string;
   completed_at: string | null;
+  instructor?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar_url?: string | null;
+  } | null;
+  category?: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
 }
 
 export interface ResumeLearning {

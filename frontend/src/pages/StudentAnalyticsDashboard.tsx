@@ -416,45 +416,45 @@ export const StudentAnalyticsDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             {
-              id: "cloud-devops",
+              id: "c-devops-01",
               title: "Full-Stack Cloud & DevOps Engineering",
               category: "Cloud & DevOps",
               gradient: "from-blue-600 to-cyan-600",
-              modules: 2,
+              modules: 3,
               duration: "320 mins",
               hasPpt: true,
               hasSelfAssessment: true,
               hasQuiz: true,
             },
             {
-              id: "ai-llms",
+              id: "c-ai-01",
               title: "Enterprise AI Engineering & Large Language Models",
               category: "AI & Data Science",
               gradient: "from-indigo-600 to-violet-600",
-              modules: 2,
-              duration: "380 mins",
+              modules: 3,
+              duration: "420 mins",
               hasPpt: true,
               hasSelfAssessment: true,
               hasQuiz: true,
             },
             {
-              id: "python-spark",
+              id: "c-python-01",
               title: "Advanced Python & Distributed Data Systems",
               category: "Software Engineering",
               gradient: "from-emerald-600 to-teal-600",
-              modules: 2,
-              duration: "340 mins",
+              modules: 3,
+              duration: "360 mins",
               hasPpt: true,
               hasSelfAssessment: true,
               hasQuiz: true,
             },
             {
-              id: "cybersecurity-zt",
+              id: "c-security-01",
               title: "Enterprise Cybersecurity & Zero Trust Systems",
               category: "Cybersecurity",
               gradient: "from-slate-800 to-slate-950",
-              modules: 2,
-              duration: "290 mins",
+              modules: 3,
+              duration: "380 mins",
               hasPpt: true,
               hasSelfAssessment: true,
               hasQuiz: true,
@@ -462,7 +462,7 @@ export const StudentAnalyticsDashboard: React.FC = () => {
           ].map((course) => (
             <div
               key={course.id}
-              onClick={() => navigate("/my-courses")}
+              onClick={() => navigate(`/courses/${course.id}`)}
               className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
             >
               <div>
@@ -473,7 +473,7 @@ export const StudentAnalyticsDashboard: React.FC = () => {
                     </span>
                     <span className="text-[10px] text-white/80 font-mono font-medium">{course.duration}</span>
                   </div>
-                  <span className="text-xs font-semibold text-white/90">2 Comprehensive Modules</span>
+                  <span className="text-xs font-semibold text-white/90">{course.modules} Comprehensive Sections</span>
                 </div>
 
                 <div className="p-4 space-y-3">

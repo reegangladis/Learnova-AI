@@ -305,9 +305,11 @@ export function MyLearningPage() {
                         <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">Self-Assessment</span>
                       </div>
 
-                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
-                        {enr.course?.title}
-                      </h4>
+                      <Link to={`/courses/${enr.course_id}`}>
+                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
+                          {enr.course?.title}
+                        </h4>
+                      </Link>
                     </div>
 
                     {/* Progress Bar & Percentage */}
@@ -336,12 +338,12 @@ export function MyLearningPage() {
                         {isDone ? "Completed" : "In progress"}
                       </span>
 
-                      <Link to={`/learning/courses/${enr.course_id}`}>
+                      <Link to={`/courses/${enr.course_id}`}>
                         <button
                           type="button"
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                          className="bg-[#063B50] hover:bg-[#052E40] text-white font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-xs transition-all cursor-pointer"
                         >
-                          <span>{isDone ? "Review" : progress > 0 ? "Continue" : "Start"}</span>
+                          <span>{isDone ? "Review" : progress > 0 ? "Continue" : "Open Course"}</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </Link>

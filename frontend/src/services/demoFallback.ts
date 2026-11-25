@@ -1,9 +1,22 @@
 import { User, AuthResponse } from "@/types/auth";
 import { CourseListResponse, CourseDetail } from "@/types/course";
-import { EnrollmentListResponse } from "@/types/learning";
+import { EnrollmentListResponse, LearningCourse } from "@/types/learning";
 import { StudentOverview, StudentActivityResponse } from "@/types/analytics";
 import { AIChatResponse, SourceCitation, CourseIngestionStatus, AIConversation } from "@/types/ai";
 import { CourseRecommendationsResponse, LearningInsightsResponse, LearningPathResponse, ModelStatusResponse } from "@/types/ml";
+import { QuizResult } from "@/types/quiz";
+import {
+  SEEDED_COURSES,
+  resolveCourseId,
+  getCourseModulesWithProgress,
+  toCourseModulesForDetail,
+  setDemoLessonCompleted,
+  ALL_QUIZZES_MAP,
+  buildQuizTakePayload,
+  getAttemptsForQuiz,
+  getDemoQuizAttemptsMap,
+  saveDemoQuizAttemptsMap,
+} from "@/data/courseCurricula";
 import { APIClientError } from "./apiClient";
 
 export const DEMO_USERS: Record<string, { pass: string; user: User }> = {
@@ -95,156 +108,7 @@ export const DEMO_USERS: Record<string, { pass: string; user: User }> = {
   },
 };
 
-export const SAMPLE_COURSES = [
-  {
-    id: "c-devops-01",
-    title: "Full-Stack Cloud & DevOps Engineering",
-    slug: "fullstack-cloud-devops-engineering",
-    category_slug: "cloud-devops",
-    short_description: "Master Linux container runtimes, production Docker optimization, Kubernetes clusters, and GitOps.",
-    description: "<p>A comprehensive, hands-on curriculum taking engineers from low-level container primitives to enterprise Kubernetes deployment pipelines.</p>",
-    difficulty: "intermediate",
-    duration_minutes: 320,
-    status: "published",
-    objectives: [
-      "Design multi-stage Docker container builds",
-      "Configure Kubernetes pods, services, and ingress controllers",
-      "Automate continuous deployment with GitOps pipelines",
-    ],
-    prerequisites: ["Linux CLI basics", "Basic networking concepts"],
-    created_at: "2026-11-20T10:00:00Z",
-    updated_at: "2026-11-20T10:00:00Z",
-  },
-  {
-    id: "c-ai-01",
-    title: "Enterprise AI Engineering & Large Language Models",
-    slug: "enterprise-ai-engineering-llms",
-    category_slug: "ai-data-science",
-    short_description: "Architect enterprise RAG pipelines, fine-tune open weights, evaluate vector embeddings, and scale AI agents.",
-    description: "<p>Deep-dive engineering curriculum covering Transformer attention mechanics, prompt orchestration, and vector knowledge retrieval.</p>",
-    difficulty: "advanced",
-    duration_minutes: 420,
-    status: "published",
-    objectives: [
-      "Implement scaled dot-product & multi-head attention",
-      "Build production vector search pipelines with hybrid retrieval",
-      "Deploy agentic workflows with tool-calling capabilities",
-    ],
-    prerequisites: ["Python intermediate", "Linear algebra basics"],
-    created_at: "2026-11-20T10:00:00Z",
-    updated_at: "2026-11-20T10:00:00Z",
-  },
-  {
-    id: "c-python-01",
-    title: "Advanced Python & Distributed Data Systems",
-    slug: "advanced-python-distributed-data",
-    category_slug: "software-engineering",
-    short_description: "High-performance Python, CPython internals, async event loops, PySpark cluster computing, and streaming architectures.",
-    description: "<p>Master concurrent programming paradigms, asyncio event loop profiling, and distributed data pipelines with PySpark and Kafka.</p>",
-    difficulty: "advanced",
-    duration_minutes: 360,
-    status: "published",
-    objectives: [
-      "Profile CPython memory management and GIL bottlenecks",
-      "Build high-throughput asynchronous services with Asyncio",
-      "Process terabyte-scale distributed datasets with PySpark",
-    ],
-    prerequisites: ["Python OOP fundamentals"],
-    created_at: "2026-11-20T10:00:00Z",
-    updated_at: "2026-11-20T10:00:00Z",
-  },
-  {
-    id: "c-security-01",
-    title: "Enterprise Cybersecurity & Zero Trust Systems",
-    slug: "enterprise-cybersecurity-zero-trust",
-    category_slug: "cybersecurity",
-    short_description: "Implement perimeterless Zero Trust network architectures, identity federation, mTLS authentication, and incident triage.",
-    description: "<p>Production cybersecurity defense training covering BeyondCorp Zero Trust principles, cryptographic workload identity, and cloud incident response.</p>",
-    difficulty: "advanced",
-    duration_minutes: 380,
-    status: "published",
-    objectives: [
-      "Architect microsegmented Zero Trust network boundaries",
-      "Implement cryptographic workload identities with SPIFFE/SPIRE",
-      "Conduct automated threat hunting and SIEM alert triage",
-    ],
-    prerequisites: ["Networking & TCP/IP fundamentals", "Public key cryptography basics"],
-    created_at: "2026-11-20T10:00:00Z",
-    updated_at: "2026-11-20T10:00:00Z",
-  },
-];
-
-export const SAMPLE_MODULES = [
-  {
-    id: "mod-1",
-    course_id: "c-devops-01",
-    title: "Module 1: Container Architecture & Dockerfile Optimization",
-    order: 1,
-    description: "Deep dive into Linux cgroups, namespaces, and Docker build strategies.",
-    lessons: [
-      {
-        id: "les-1",
-        title: "1.1 Linux Namespaces, Cgroups & Isolation Primitives",
-        content_type: "text",
-        order: 1,
-        content: `### Container Runtime Primitives\nLinux containers are built upon two foundational kernel mechanisms: Namespaces and Control Groups (cgroups).\n\n#### 1. Kernel Namespaces\nNamespaces partition kernel resources such that one set of processes sees one set of resources while another sees an entirely isolated view.`,
-        is_completed: true,
-      },
-      {
-        id: "les-2",
-        title: "1.2 Production Dockerfile Multi-Stage Build Video",
-        content_type: "video",
-        order: 2,
-        video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-        duration_minutes: 18,
-        is_completed: true,
-      },
-      {
-        id: "les-3",
-        title: "1.3 Enterprise Container Architecture & Distroless Images",
-        content_type: "ppt",
-        order: 3,
-        duration_minutes: 25,
-        presentation_notes: "Comprehensive architectural deck covering distroless containers, multi-stage compilation, and CVE vulnerability scanning.",
-        slides: [
-          { slide_number: 1, title: "Enterprise Container Architecture", content: "Executive overview of container runtime security and distroless deployment standards.", key_takeaways: ["Minimize container surface area", "Remove shell and package managers from production images", "Enforce non-root execution by default"] },
-          { slide_number: 2, title: "Linux Kernel Primitives", content: "Understanding PID, NET, IPC, and MNT namespaces alongside cgroups v2 resource quotas.", key_takeaways: ["PID namespace isolates process tree", "Network namespaces provide independent virtual ethernet pairs", "Cgroups v2 limit CPU, memory, and IOPS throttling"] },
-          { slide_number: 3, title: "Multi-Stage Build Pipeline", content: "Separating build-time toolchains (compilers, SDKs) from the final runtime container.", key_takeaways: ["Drastic 80%+ reduction in image size", "Eliminates build-time CVE vulnerabilities", "Enables cache mounting for sub-second rebuilds"] },
-          { slide_number: 4, title: "Distroless & Minimal Base Images", content: "Comparison of Ubuntu, Alpine (musl libc), and GoogleContainerTools Distroless base images.", key_takeaways: ["Distroless contains only runtime dependencies and glibc", "Zero interactive shell access prevents reverse shells", "Faster container pull latency in Kubernetes auto-scaling"] },
-          { slide_number: 5, title: "Vulnerability Scanning & SBOM Generation", content: "Automating container security gates with Trivy, Grype, and Syft inside the CI/CD pipeline.", key_takeaways: ["Generate Software Bill of Materials (SPDX/CycloneDX)", "Block builds exceeding CVSS 7.0 severity threshold", "Sign images with Cosign and verify at admission controller"] },
-          { slide_number: 6, title: "Production Hardening Checklist", content: "Read-only root filesystems, drop all Linux capabilities except NET_BIND_SERVICE, and seccomp profiles.", key_takeaways: ["Set securityContext: readOnlyRootFilesystem: true", "Drop CAP_SYS_ADMIN and unnecessary capabilities", "Monitor runtime syscall anomalies with eBPF/Falco"] },
-        ],
-        is_completed: false,
-      },
-    ],
-  },
-  {
-    id: "mod-2",
-    course_id: "c-devops-01",
-    title: "Module 2: Kubernetes Orchestration & Cluster Management",
-    order: 2,
-    description: "Hands-on cluster topologies, ingress controllers, and persistent volumes.",
-    lessons: [
-      {
-        id: "les-4",
-        title: "2.1 Pod Networking, CNI Plugins & Service Discovery",
-        content_type: "text",
-        order: 1,
-        content: `### Kubernetes Networking Fundamentals\nIn Kubernetes, every pod receives its own unique IP address within the cluster network.`,
-        is_completed: false,
-      },
-      {
-        id: "les-5",
-        title: "2.2 Cluster Deployment, Helm Charts & GitOps Workflow",
-        content_type: "video",
-        order: 2,
-        video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-        duration_minutes: 24,
-        is_completed: false,
-      },
-    ],
-  },
-];
+export const SAMPLE_COURSES = SEEDED_COURSES;
 
 export function tryDemoFallback<T>(
   path: string,
@@ -334,11 +198,31 @@ export function tryDemoFallback<T>(
     } as unknown as T;
   }
 
+  // 6b. Categories List: GET /course-categories
+  if (cleanPath === "/course-categories" && method === "GET") {
+    const categories = SEEDED_COURSES.map((c) => c.category!).filter(Boolean);
+    return categories as unknown as T;
+  }
+
   // 7. Courses List: GET /courses
   if (cleanPath === "/courses" && method === "GET") {
+    const params = options.params || {};
+    const search = typeof params.search === "string" ? params.search.toLowerCase().trim() : "";
+    const catId = typeof params.category_id === "string" ? params.category_id : "";
+    const diff = typeof params.difficulty === "string" ? params.difficulty : "";
+
+    const filtered = SEEDED_COURSES.filter((c) => {
+      if (search && !c.title.toLowerCase().includes(search) && !c.short_description.toLowerCase().includes(search)) {
+        return false;
+      }
+      if (catId && c.category_id !== catId) return false;
+      if (diff && c.difficulty !== diff) return false;
+      return true;
+    });
+
     const res: CourseListResponse = {
-      items: SAMPLE_COURSES as any,
-      total: SAMPLE_COURSES.length,
+      items: filtered,
+      total: filtered.length,
       page: 1,
       page_size: 20,
       total_pages: 1,
@@ -346,57 +230,310 @@ export function tryDemoFallback<T>(
     return res as unknown as T;
   }
 
-  // 8. Learning Course Detail: GET /learning/courses/:id or GET /courses/:id
+  // 8. Lesson progress updates: PUT/GET /learning/lessons/:lessonId/progress
+  if (cleanPath.startsWith("/learning/lessons/") && cleanPath.endsWith("/progress")) {
+    const lessonId = cleanPath.split("/")[3];
+    if (method === "PUT") {
+      const body = (options.body || {}) as {
+        is_completed?: boolean;
+        playback_position_seconds?: number;
+        playback_duration_seconds?: number;
+      };
+      if (typeof body.is_completed === "boolean") {
+        setDemoLessonCompleted(lessonId, body.is_completed);
+      }
+      return {
+        id: `prog-${lessonId}`,
+        user_id: "usr-student-01",
+        lesson_id: lessonId,
+        course_id: "c-devops-01",
+        is_completed: Boolean(body.is_completed),
+        completed_at: body.is_completed ? new Date().toISOString() : null,
+        playback_position_seconds: body.playback_position_seconds || 0,
+        playback_duration_seconds: body.playback_duration_seconds || 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as unknown as T;
+    }
+    return {
+      id: `prog-${lessonId}`,
+      user_id: "usr-student-01",
+      lesson_id: lessonId,
+      course_id: "c-devops-01",
+      is_completed: false,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as unknown as T;
+  }
+
+  // 8b. Offline sync progress: POST /learning/courses/:id/sync-progress
+  if (cleanPath.startsWith("/learning/courses/") && cleanPath.endsWith("/sync-progress") && method === "POST") {
+    return { synced: 0, skipped: 0 } as unknown as T;
+  }
+
+  // 8c. Learning Course & Course Detail: GET /learning/courses/:id or GET /courses/:id
   if ((cleanPath.startsWith("/learning/courses/") || cleanPath.startsWith("/courses/")) && method === "GET") {
     const segments = cleanPath.split("/").filter(Boolean);
-    const courseId = segments[segments.length - 1];
+    const isLearningRoute = cleanPath.startsWith("/learning/courses/");
+    const rawCourseId = isLearningRoute ? segments[2] : segments[1];
+    const resolvedId = resolveCourseId(rawCourseId);
+    const { course, modules, progress, quizzes } = getCourseModulesWithProgress(resolvedId);
 
     if (cleanPath.endsWith("/progress")) {
-      return {
-        course_id: courseId,
-        progress_percentage: 67,
-        completed_lessons_count: 2,
-        total_lessons_count: 5,
-        is_completed: false,
-        last_accessed_lesson_id: "les-3",
-      } as unknown as T;
+      return progress as unknown as T;
     }
 
     if (cleanPath.endsWith("/resume")) {
+      const allLessons = modules.flatMap((m) => m.lessons);
+      const nextLes = allLessons.find((l) => !l.is_completed) || allLessons[0];
       return {
-        course_id: courseId,
-        next_lesson_id: "les-3",
-        next_lesson_title: "1.3 Enterprise Container Architecture & Distroless Images",
-        progress_percentage: 67,
+        course_id: course.id,
+        next_lesson_id: nextLes?.id || null,
+        next_lesson_title: nextLes?.title || null,
+        next_module_id: nextLes?.module_id || null,
+        progress_percentage: progress.progress_percentage,
       } as unknown as T;
     }
 
     if (cleanPath.endsWith("/quizzes")) {
-      return [
-        {
-          id: "q-1",
-          title: "Container Runtime & Isolation Knowledge Check",
-          total_questions: 5,
-          passing_score: 80,
-          best_score: 90,
-          status: "passed",
-        },
-      ] as unknown as T;
+      return quizzes as unknown as T;
     }
 
-    const baseCourse = SAMPLE_COURSES.find((c) => c.id === courseId || c.slug === courseId) || SAMPLE_COURSES[0];
+    if (isLearningRoute) {
+      const learningCourse: LearningCourse = {
+        id: course.id,
+        title: course.title,
+        slug: course.slug,
+        short_description: course.short_description,
+        description: course.description,
+        thumbnail_url: course.thumbnail_url || null,
+        difficulty: course.difficulty,
+        duration_minutes: course.duration_minutes,
+        learning_objectives: course.learning_objectives,
+        prerequisites: course.prerequisites,
+        modules,
+        progress,
+        enrollment_status: "active",
+        enrolled_at: "2026-11-05T09:00:00Z",
+        completed_at: progress.is_course_completed ? "2026-11-22T12:00:00Z" : null,
+        instructor: course.instructor,
+        category: course.category,
+      };
+      return learningCourse as unknown as T;
+    }
+
     const detail: CourseDetail = {
-      ...baseCourse,
-      modules: SAMPLE_MODULES as any,
-      is_enrolled: true,
-      user_progress: {
-        progress_percentage: 67,
-        completed_lessons: 2,
-        total_lessons: 5,
-        last_accessed_at: new Date().toISOString(),
-      },
-    } as any;
+      ...course,
+      modules: toCourseModulesForDetail(modules),
+    };
     return detail as unknown as T;
+  }
+
+  // 8d. Student Quizzes Endpoints: GET/POST /quizzes/... and /quiz-attempts/...
+  if (cleanPath.startsWith("/quizzes/") || cleanPath.startsWith("/quiz-attempts/")) {
+    const buildResultForRecord = (att: ReturnType<typeof getAttemptsForQuiz>[number]): QuizResult | null => {
+      const spec = ALL_QUIZZES_MAP[att.quiz_id];
+      if (!spec) return null;
+      const question_results = spec.detail.questions.map((q) => {
+        const selectedIds = att.selectedAnswers[q.id] || [];
+        const correctIds = q.options.filter((o) => o.is_correct).map((o) => o.id);
+        const isCorrect =
+          selectedIds.length === correctIds.length &&
+          correctIds.every((cid) => selectedIds.includes(cid));
+        return {
+          question_id: q.id,
+          question_text: q.question_text,
+          question_type: q.question_type,
+          order_index: q.order_index,
+          points_possible: q.points,
+          points_awarded: isCorrect ? q.points : 0,
+          is_correct: isCorrect,
+          selected_option_ids: selectedIds,
+          correct_option_ids: correctIds,
+          options: q.options,
+          explanation: q.explanation,
+        };
+      });
+
+      const score = question_results.reduce((acc, qr) => acc + qr.points_awarded, 0);
+      const maxScore = spec.detail.total_points || 1;
+      const percentage = Math.round((score / maxScore) * 100);
+      const passed = percentage >= spec.detail.passing_score_percentage;
+      const pastAttempts = getAttemptsForQuiz(att.quiz_id);
+
+      return {
+        attempt_id: att.id,
+        quiz_id: att.quiz_id,
+        quiz_title: spec.detail.title,
+        attempt_number: att.attempt_number,
+        status: "completed",
+        started_at: att.started_at,
+        submitted_at: att.submitted_at || new Date().toISOString(),
+        time_spent_seconds: att.time_spent_seconds || 120,
+        score,
+        max_score: maxScore,
+        percentage_score: percentage,
+        passed,
+        passing_score_percentage: spec.detail.passing_score_percentage,
+        can_retake: pastAttempts.length < spec.detail.max_attempts,
+        attempts_remaining: Math.max(0, spec.detail.max_attempts - pastAttempts.length),
+        question_results,
+      };
+    };
+
+    // GET /quizzes/:quizId/take
+    if (cleanPath.endsWith("/take") && method === "GET") {
+      const quizId = cleanPath.split("/")[2];
+      const payload = buildQuizTakePayload(quizId) || buildQuizTakePayload("quiz-devops-1");
+      if (payload) return payload as unknown as T;
+    }
+
+    // GET /quizzes/:quizId/attempts/me
+    if (cleanPath.endsWith("/attempts/me") && method === "GET") {
+      const quizId = cleanPath.split("/")[2];
+      const atts = getAttemptsForQuiz(quizId);
+      return atts.map((a) => ({
+        id: a.id,
+        attempt_number: a.attempt_number,
+        status: a.status,
+        started_at: a.started_at,
+        submitted_at: a.submitted_at,
+        score: a.score,
+        max_score: a.max_score,
+        percentage_score: a.percentage_score,
+        passed: a.passed,
+        time_spent_seconds: a.time_spent_seconds,
+      })) as unknown as T;
+    }
+
+    // POST /quizzes/:quizId/attempts
+    if (cleanPath.endsWith("/attempts") && method === "POST") {
+      const quizId = cleanPath.split("/")[2];
+      const spec = ALL_QUIZZES_MAP[quizId] || ALL_QUIZZES_MAP["quiz-devops-1"];
+      const map = getDemoQuizAttemptsMap();
+      const existing = getAttemptsForQuiz(spec.detail.id, map);
+      const inProg = existing.find((a) => a.status === "in_progress");
+      if (inProg) {
+        return {
+          id: inProg.id,
+          quiz_id: spec.detail.id,
+          attempt_number: inProg.attempt_number,
+          status: "in_progress",
+          started_at: inProg.started_at,
+          duration_minutes: spec.detail.duration_minutes,
+          time_remaining_seconds: spec.detail.duration_minutes * 60,
+        } as unknown as T;
+      }
+
+      const newAttempt = {
+        id: `att-${Date.now()}`,
+        quiz_id: spec.detail.id,
+        attempt_number: existing.length + 1,
+        status: "in_progress" as const,
+        started_at: new Date().toISOString(),
+        selectedAnswers: {},
+        score: 0,
+        max_score: spec.detail.total_points,
+        percentage_score: 0,
+        passed: false,
+      };
+      map[spec.detail.id] = [...existing, newAttempt];
+      saveDemoQuizAttemptsMap(map);
+
+      return {
+        id: newAttempt.id,
+        quiz_id: newAttempt.quiz_id,
+        attempt_number: newAttempt.attempt_number,
+        status: "in_progress",
+        started_at: newAttempt.started_at,
+        duration_minutes: spec.detail.duration_minutes,
+        time_remaining_seconds: spec.detail.duration_minutes * 60,
+      } as unknown as T;
+    }
+
+    // PUT /quiz-attempts/:attemptId/answers/:questionId
+    if (cleanPath.startsWith("/quiz-attempts/") && cleanPath.includes("/answers/") && method === "PUT") {
+      const parts = cleanPath.split("/").filter(Boolean);
+      const attemptId = parts[1];
+      const questionId = parts[3];
+      const body = (options.body || {}) as { selected_option_ids?: string[] };
+      const selected = body.selected_option_ids || [];
+
+      const map = getDemoQuizAttemptsMap();
+      for (const qId of Object.keys(map)) {
+        const idx = map[qId].findIndex((a) => a.id === attemptId);
+        if (idx !== -1) {
+          map[qId][idx].selectedAnswers[questionId] = selected;
+          saveDemoQuizAttemptsMap(map);
+          break;
+        }
+      }
+      return { question_id: questionId, selected_option_ids: selected, saved: true } as unknown as T;
+    }
+
+    // POST /quiz-attempts/:attemptId/submit
+    if (cleanPath.startsWith("/quiz-attempts/") && cleanPath.endsWith("/submit") && method === "POST") {
+      const attemptId = cleanPath.split("/").filter(Boolean)[1];
+      const map = getDemoQuizAttemptsMap();
+      for (const qId of Object.keys(map)) {
+        const idx = map[qId].findIndex((a) => a.id === attemptId);
+        if (idx !== -1) {
+          const att = map[qId][idx];
+          att.status = "completed";
+          att.submitted_at = new Date().toISOString();
+          att.time_spent_seconds = Math.max(
+            15,
+            Math.round((Date.now() - new Date(att.started_at).getTime()) / 1000)
+          );
+          const result = buildResultForRecord(att);
+          if (result) {
+            att.score = result.score;
+            att.max_score = result.max_score;
+            att.percentage_score = result.percentage_score;
+            att.passed = result.passed;
+            saveDemoQuizAttemptsMap(map);
+            return result as unknown as T;
+          }
+        }
+      }
+    }
+
+    // GET /quiz-attempts/:attemptId/result
+    if (cleanPath.startsWith("/quiz-attempts/") && cleanPath.endsWith("/result") && method === "GET") {
+      const attemptId = cleanPath.split("/").filter(Boolean)[1];
+      const map = getDemoQuizAttemptsMap();
+      // Search user attempts
+      for (const qId of Object.keys(map)) {
+        const found = map[qId].find((a) => a.id === attemptId);
+        if (found) {
+          const res = buildResultForRecord(found);
+          if (res) return res as unknown as T;
+        }
+      }
+      // Search default seeded attempts
+      for (const qId of Object.keys(ALL_QUIZZES_MAP)) {
+        const atts = getAttemptsForQuiz(qId);
+        const found = atts.find((a) => a.id === attemptId) || atts[0];
+        if (found && (found.id === attemptId || attemptId.includes("default"))) {
+          const res = buildResultForRecord(found);
+          if (res) return res as unknown as T;
+        }
+      }
+      // Ultimate fallback to first seeded quiz default
+      const fallbackAtts = getAttemptsForQuiz("quiz-devops-1");
+      if (fallbackAtts[0]) {
+        const res = buildResultForRecord(fallbackAtts[0]);
+        if (res) return res as unknown as T;
+      }
+    }
+
+    // GET /quizzes/:quizId
+    if (cleanPath.startsWith("/quizzes/") && method === "GET") {
+      const quizId = cleanPath.split("/")[2];
+      const spec = ALL_QUIZZES_MAP[quizId];
+      if (spec) return spec.detail as unknown as T;
+    }
   }
 
   // 9. My Enrolled Courses: GET /enrollments/me or /learning/enrollments or /learning/my-courses
@@ -407,21 +544,25 @@ export function tryDemoFallback<T>(
       cleanPath === "/enrollments") &&
     method === "GET"
   ) {
-    const enrollments = SAMPLE_COURSES.map((c, idx) => ({
-      id: `enr-${idx + 1}`,
-      user_id: "usr-student-01",
-      course_id: c.id,
-      status: "active" as const,
-      enrolled_at: "2026-11-05T09:00:00Z",
-      completed_at: null,
-      created_at: "2026-11-05T09:00:00Z",
-      updated_at: "2026-11-05T09:00:00Z",
-      course: c as any,
-      progress_percentage: idx === 0 ? 67 : idx === 1 ? 42 : idx === 2 ? 15 : 0,
-      completed_lessons_count: idx === 0 ? 2 : idx === 1 ? 1 : 0,
-      total_lessons_count: 5,
-      next_lesson_id: "les-3",
-    }));
+    const enrollments = SEEDED_COURSES.map((c, idx) => {
+      const { modules, progress } = getCourseModulesWithProgress(c.id);
+      const nextLes = modules.flatMap((m) => m.lessons).find((l) => !l.is_completed);
+      return {
+        id: `enr-${idx + 1}`,
+        user_id: "usr-student-01",
+        course_id: c.id,
+        status: (progress.is_course_completed ? "completed" : "active") as "active" | "completed",
+        enrolled_at: "2026-11-05T09:00:00Z",
+        completed_at: progress.is_course_completed ? "2026-11-22T12:00:00Z" : null,
+        created_at: "2026-11-05T09:00:00Z",
+        updated_at: "2026-11-05T09:00:00Z",
+        course: c,
+        progress_percentage: progress.progress_percentage,
+        completed_lessons_count: progress.completed_lessons,
+        total_lessons_count: progress.total_lessons,
+        next_lesson_id: nextLes?.id || null,
+      };
+    });
 
     const res: EnrollmentListResponse = {
       items: enrollments,
@@ -433,7 +574,8 @@ export function tryDemoFallback<T>(
   // 10. Enroll into course: POST /enrollments
   if (cleanPath === "/enrollments" && method === "POST") {
     const body = options.body as { course_id?: string };
-    const course = SAMPLE_COURSES.find((c) => c.id === body?.course_id) || SAMPLE_COURSES[0];
+    const resolvedId = resolveCourseId(body?.course_id);
+    const { course, progress } = getCourseModulesWithProgress(resolvedId);
     return {
       id: `enr-${Date.now()}`,
       user_id: "usr-student-01",
@@ -441,7 +583,44 @@ export function tryDemoFallback<T>(
       status: "active",
       enrolled_at: new Date().toISOString(),
       course,
-      progress_percentage: 0,
+      progress_percentage: progress.progress_percentage,
+      completed_lessons_count: progress.completed_lessons,
+      total_lessons_count: progress.total_lessons,
+      next_lesson_id: null,
+    } as unknown as T;
+  }
+
+  // 10b. Student Assessments Analytics: GET /analytics/student/assessments
+  if (cleanPath === "/analytics/student/assessments" && method === "GET") {
+    const allResults = Object.values(ALL_QUIZZES_MAP).flatMap((spec) => {
+      const course = SEEDED_COURSES.find((c) => c.id === spec.detail.course_id);
+      return getAttemptsForQuiz(spec.detail.id)
+        .filter((a) => a.status === "completed")
+        .map((att) => ({
+          attempt_id: att.id,
+          quiz_id: spec.detail.id,
+          quiz_title: spec.detail.title,
+          course_id: spec.detail.course_id,
+          course_title: course?.title || "Learnova Course",
+          attempt_number: att.attempt_number,
+          score: att.score,
+          max_score: att.max_score,
+          percentage_score: att.percentage_score,
+          passed: att.passed,
+          time_spent_seconds: att.time_spent_seconds || 180,
+          submitted_at: att.submitted_at || att.started_at,
+        }));
+    });
+
+    return {
+      total_attempts: allResults.length,
+      passed_attempts: allResults.filter((r) => r.passed).length,
+      average_score: allResults.length > 0 ? Math.round(allResults.reduce((s, r) => s + r.percentage_score, 0) / allResults.length) : 0,
+      pass_rate: allResults.length > 0 ? Math.round((allResults.filter((r) => r.passed).length / allResults.length) * 100) : 0,
+      results: allResults,
+      total: allResults.length,
+      page: 1,
+      page_size: 20,
     } as unknown as T;
   }
 
@@ -466,21 +645,21 @@ export function tryDemoFallback<T>(
           course_id: "c-devops-01",
           course_title: "Full-Stack Cloud & DevOps Engineering",
           thumbnail_url: null,
-          progress_percentage: 67,
-          completed_lessons: 2,
-          total_lessons: 5,
-          next_lesson_id: "les-3",
-          next_lesson_title: "1.3 Enterprise Container Architecture & Distroless Images",
+          progress_percentage: 56,
+          completed_lessons: 5,
+          total_lessons: 9,
+          next_lesson_id: "les-devops-1-3",
+          next_lesson_title: "1.3 Presentation Slides: Enterprise Container & Distroless Playbook",
         },
         {
           course_id: "c-ai-01",
           course_title: "Enterprise AI Engineering & Large Language Models",
           thumbnail_url: null,
-          progress_percentage: 42,
-          completed_lessons: 2,
-          total_lessons: 6,
-          next_lesson_id: "les-ai-3",
-          next_lesson_title: "2.1 Scaled Dot-Product & FlashAttention-2 Mechanics",
+          progress_percentage: 44,
+          completed_lessons: 4,
+          total_lessons: 9,
+          next_lesson_id: "les-ai-1-2",
+          next_lesson_title: "1.2 Recorded Session: Chain-of-Thought & Agentic ReAct Loops",
         },
       ],
     };
@@ -879,12 +1058,12 @@ export function tryDemoFallback<T>(
       current_focus: "Container Architecture & Production Hardening",
       next_step: {
         step_type: "lesson_completion",
-        title: "1.3 Enterprise Container Architecture & Distroless Images",
+        title: "1.3 Presentation Slides: Enterprise Container & Distroless Playbook",
         description: "Study interactive slide deck on distroless packaging, non-root execution, and vulnerability scanning.",
         course_id: "c-devops-01",
         course_title: "Full-Stack Cloud & DevOps Engineering",
-        lesson_id: "les-3",
-        lesson_title: "1.3 Enterprise Container Architecture & Distroless Images",
+        lesson_id: "les-devops-1-3",
+        lesson_title: "1.3 Presentation Slides: Enterprise Container & Distroless Playbook",
         estimated_minutes: 25,
         confidence_level: "high",
       },
