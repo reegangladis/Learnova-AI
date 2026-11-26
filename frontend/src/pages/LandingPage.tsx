@@ -14,119 +14,106 @@ import {
   Terminal,
 } from "lucide-react";
 
-interface TrackSample {
+interface StudioSpotlight {
   id: string;
-  tag: string;
-  title: string;
-  instructor: string;
-  duration: string;
-  chunksIndexed: number;
-  accent: string;
-  chipBg: string;
-  sampleQuestion: string;
-  citationSource: string;
-  similarityScore: string;
-  answerPreview: string;
-  modules: string[];
+  badge: string;
+  courseTitle: string;
+  mentorName: string;
+  mentorRole: string;
+  mentorAvatar: string;
+  accentBg: string;
+  accentText: string;
+  query: string;
+  citation: string;
+  score: string;
+  snippet: string;
+  stats: string;
 }
 
-const INTERACTIVE_TRACKS: TrackSample[] = [
+const STUDIO_SPOTLIGHTS: StudioSpotlight[] = [
+  {
+    id: "ai-rag",
+    badge: "AI & LLMs",
+    courseTitle: "Enterprise AI Engineering & Large Language Models",
+    mentorName: "Dr. Aravind Nair",
+    mentorRole: "Applied AI Architect",
+    mentorAvatar:
+      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
+    accentBg: "bg-teal-600",
+    accentText: "text-teal-700 dark:text-teal-300",
+    query: "How does FAISS FlatIP rank curriculum context chunks?",
+    citation: "Mod 2 · Vector Store Slide #09 · Chunk #410",
+    score: "99.1% Match",
+    snippet:
+      "L2-normalized embeddings convert cosine similarity into an exact inner product dot computation, returning grounded citations in <42ms.",
+    stats: "410 Indexed Chunks · 3 Modules",
+  },
   {
     id: "cloud-devops",
-    tag: "TRACK 01",
-    title: "Cloud Infrastructure & Kubernetes DevOps",
-    instructor: "Vikram Patel · Principal SRE",
-    duration: "18h 40m",
-    chunksIndexed: 342,
-    accent: "from-teal-600 to-emerald-500",
-    chipBg: "bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/25",
-    sampleQuestion: "How does HorizontalPodAutoscaler scale stateless workloads?",
-    citationSource: "Mod 2 · Deck Slide #08 · K8s Autoscaling",
-    similarityScore: "98.4% FAISS Match",
-    answerPreview:
-      "HPA queries the Metrics Server every 15s (sync period) and computes desiredReplicas = ceil[currentReplicas * (currentMetric / targetMetric)], with stabilization windows to prevent thrashing.",
-    modules: [
-      "IAM Boundaries & VPC Peering",
-      "Kubernetes Control Plane & HPA",
-      "GitOps & Canary Rollouts",
-    ],
+    badge: "Cloud & K8s",
+    courseTitle: "Full-Stack Cloud & DevOps Engineering",
+    mentorName: "Sarah Connor",
+    mentorRole: "Principal SRE Lead",
+    mentorAvatar:
+      "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80",
+    accentBg: "bg-orange-500",
+    accentText: "text-orange-600 dark:text-orange-400",
+    query: "How do multi-stage Docker builds shrink runtime attack surface?",
+    citation: "Mod 1 · Container Security Deck #04",
+    score: "98.4% Match",
+    snippet:
+      "Separating builder toolchains from distroless runtime stages removes package managers, compilers, and shells—eliminating over 80% of base image CVEs.",
+    stats: "320 Indexed Chunks · 320m Video + Decks",
   },
   {
-    id: "enterprise-ai",
-    tag: "TRACK 02",
-    title: "Enterprise AI Agents & RAG Systems",
-    instructor: "Dr. Elena Vance · Applied AI Lead",
-    duration: "22h 15m",
-    chunksIndexed: 418,
-    accent: "from-orange-500 to-rose-500",
-    chipBg: "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/25",
-    sampleQuestion: "Why pair dense FAISS vectors with reciprocal rank fusion?",
-    citationSource: "Mod 1 · RAG Architecture · Chunk #114",
-    similarityScore: "99.1% FAISS Match",
-    answerPreview:
-      "Dense semantic embeddings capture paraphrase intent while BM25 lexical matching locks onto exact acronyms, API keys, and error codes—boosting Recall@5 by 19% in grounded citations.",
-    modules: [
-      "Semantic Chunking & FAISS Indexing",
-      "Tool-Calling & Guardrail Agents",
-      "Grounded Citation Evaluation",
-    ],
-  },
-  {
-    id: "python-pyspark",
-    tag: "TRACK 03",
-    title: "Distributed Python & PySpark Engineering",
-    instructor: "Arjun Nair · Staff Data Architect",
-    duration: "16h 30m",
-    chunksIndexed: 276,
-    accent: "from-blue-600 to-cyan-500",
-    chipBg: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/25",
-    sampleQuestion: "When should Broadcast Hash Join replace Sort-Merge Join?",
-    citationSource: "Mod 3 · Catalyst Optimizer · Slide #14",
-    similarityScore: "97.6% FAISS Match",
-    answerPreview:
-      "When the smaller dimension table fits safely under spark.sql.autoBroadcastJoinThreshold (10MB default), broadcasting avoids full cluster shuffle and reduces stage latency dramatically.",
-    modules: [
-      "Memory-Safe Python Generators",
-      "Catalyst Query Plans & Partitioning",
-      "Delta Lake Structured Streaming",
-    ],
+    id: "python-data",
+    badge: "Python & Spark",
+    courseTitle: "Advanced Python & Distributed Data Systems",
+    mentorName: "Rohan Mehta",
+    mentorRole: "Staff Data Engineer",
+    mentorAvatar:
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80",
+    accentBg: "bg-blue-600",
+    accentText: "text-blue-600 dark:text-blue-400",
+    query: "When does Catalyst choose Broadcast Hash Join over Sort-Merge?",
+    citation: "Mod 3 · Spark Shuffle Internals #14",
+    score: "97.8% Match",
+    snippet:
+      "When one relation stays below the broadcast threshold, Spark replicates it across executors to eliminate network shuffle overhead entirely.",
+    stats: "280 Indexed Chunks · Asyncio & PySpark",
   },
   {
     id: "zero-trust",
-    tag: "TRACK 04",
-    title: "Zero Trust Security & Identity Engineering",
-    instructor: "Meera Kapoor · AppSec Director",
-    duration: "14h 50m",
-    chunksIndexed: 214,
-    accent: "from-emerald-600 to-teal-500",
-    chipBg: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
-    sampleQuestion: "How do short-lived OIDC tokens prevent lateral privilege escalation?",
-    citationSource: "Mod 1 · Token Architecture · Chunk #49",
-    similarityScore: "98.0% FAISS Match",
-    answerPreview:
-      "Audience-bound JWT assertions paired with strict RBAC claims and continuous session posture checks isolate workloads so compromised secrets expire within minutes.",
-    modules: [
-      "OAuth 2.1, PKCE & OIDC Claims",
-      "mTLS Service Mesh Policies",
-      "Automated Threat Detection Lab",
-    ],
+    badge: "Zero Trust",
+    courseTitle: "Enterprise Cybersecurity & Zero Trust Systems",
+    mentorName: "Meera Kapoor",
+    mentorRole: "Security Director",
+    mentorAvatar:
+      "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=600&q=80",
+    accentBg: "bg-emerald-600",
+    accentText: "text-emerald-700 dark:text-emerald-400",
+    query: "Why do SPIFFE SVIDs replace static service secrets?",
+    citation: "Mod 2 · Workload Attestation #07",
+    score: "98.6% Match",
+    snippet:
+      "Short-lived X.509 cryptographic workload certificates rotate automatically over mTLS, preventing lateral credential theft.",
+    stats: "230 Indexed Chunks · Live Threat Labs",
   },
 ];
 
 export function LandingPage() {
-  const [selectedTrackIdx, setSelectedTrackIdx] = useState(0);
-  const [playgroundTab, setPlaygroundTab] = useState<"copilot" | "syllabus">("copilot");
-
-  const activeTrack = INTERACTIVE_TRACKS[selectedTrackIdx];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [showCitations, setShowCitations] = useState(true);
+  const spotlight = STUDIO_SPOTLIGHTS[activeIndex];
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground studio-grid-bg flex flex-col justify-between relative overflow-x-clip">
-      {/* Subtle architectural accent glows */}
-      <div className="fixed top-[-15%] right-[-8%] w-[520px] h-[520px] rounded-full bg-teal-500/10 blur-[130px] pointer-events-none" />
-      <div className="fixed bottom-[-12%] left-[-8%] w-[460px] h-[460px] rounded-full bg-orange-500/10 blur-[140px] pointer-events-none" />
+      {/* Warm organic accent washes (distinct from JAIN navy/yellow) */}
+      <div className="fixed top-[-12%] right-[-8%] w-[560px] h-[560px] rounded-full bg-teal-500/10 blur-[140px] pointer-events-none" />
+      <div className="fixed bottom-[-12%] left-[-8%] w-[520px] h-[520px] rounded-full bg-orange-500/10 blur-[140px] pointer-events-none" />
 
-      {/* Top Navigation */}
-      <header className="w-full max-w-7xl mx-auto px-5 sm:px-10 py-5 flex items-center justify-between relative z-20">
+      {/* Minimalist Iconic Top Header */}
+      <header className="w-full max-w-7xl mx-auto px-6 sm:px-10 py-5 flex items-center justify-between relative z-20">
         <Link to="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-[0_3px_0_0_#0f766e] group-hover:-translate-y-0.5 transition-transform">
             <GraduationCap className="w-5 h-5" />
@@ -135,73 +122,75 @@ export function LandingPage() {
             <span className="font-display font-bold text-xl tracking-tight text-foreground block leading-none">
               Learnova
             </span>
-            <span className="text-[11px] font-mono uppercase tracking-wider text-teal-700 dark:text-teal-400 mt-1 block">
-              Learn with AI
+            <span className="text-[10px] font-mono uppercase tracking-widest text-teal-700 dark:text-teal-400 mt-1 block">
+              Intelligent LMS · Learn with AI
             </span>
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-          <Link to="/courses" className="hover:text-foreground transition-colors">
-            Course Catalog
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            to="/courses"
+            className="hidden sm:inline-flex text-xs font-semibold text-muted-foreground hover:text-foreground px-3.5 py-2 rounded-xl hover:bg-secondary transition-colors"
+          >
+            Explore Catalog
           </Link>
-          <Link to="/status" className="hover:text-foreground transition-colors">
-            System Telemetry
+          <Link
+            to="/status"
+            className="hidden md:inline-flex text-xs font-semibold text-muted-foreground hover:text-foreground px-3.5 py-2 rounded-xl hover:bg-secondary transition-colors"
+          >
+            System Health
           </Link>
-        </nav>
-
-        <div className="flex items-center gap-2.5">
           <Link
             to="/login"
-            className="text-xs sm:text-sm font-semibold text-foreground/80 hover:text-foreground px-3.5 py-2 rounded-xl hover:bg-secondary transition-colors"
+            className="text-xs font-bold bg-card border border-border hover:bg-secondary text-foreground px-4 py-2 rounded-xl transition-colors"
           >
             Sign In
           </Link>
           <Link
             to="/dashboard"
-            className="text-xs sm:text-sm font-bold bg-foreground text-background hover:bg-foreground/90 px-4 py-2 rounded-xl transition-all shadow-sm kinetic-press flex items-center gap-1.5"
+            className="text-xs font-bold bg-foreground hover:bg-foreground/90 text-background px-4 py-2 rounded-xl transition-all shadow-xs kinetic-press"
           >
-            <span>Open Studio</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            Open Studio
           </Link>
         </div>
       </header>
 
-      {/* Hero Section: Editorial Studio Typography + Live Interactive Playground */}
-      <main className="w-full max-w-7xl mx-auto px-5 sm:px-10 py-6 lg:py-10 flex-1 flex flex-col gap-12 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-          {/* LEFT COLUMN: Editorial Positioning */}
-          <div className="lg:col-span-6 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border shadow-xs text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-              <span className="text-foreground">Interactive AI Studio LMS · 1,250+ Indexed Chunks</span>
+      {/* FULL-VIEWPORT BALANCED 2-COLUMN HERO (Inspired by clean focus, unique Studio Bento Visual on right) */}
+      <main className="w-full max-w-7xl mx-auto px-6 sm:px-10 py-6 lg:py-8 flex-1 flex items-center relative z-10">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          {/* LEFT COLUMN: Crisp Display Statement, Concise Tagline & Action Pills */}
+          <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border shadow-xs text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+              <span className="text-foreground">Studio Atelier LMS · Dual-Engine RAG + ML</span>
             </div>
 
-            <h1 className="font-display text-4xl sm:text-5xl xl:text-6xl font-bold tracking-tight leading-[1.06] text-foreground">
-              Build deep engineering fluency with{" "}
-              <span className="relative inline-block text-teal-700 dark:text-teal-400">
-                living curricula
-                <span className="absolute left-0 bottom-1 w-full h-2.5 bg-orange-400/25 -z-10 rounded-full" />
-              </span>
-              .
-            </h1>
+            <div className="space-y-3">
+              <h1 className="font-display text-4xl sm:text-5xl xl:text-[3.55rem] font-bold tracking-tight leading-[1.06] text-foreground">
+                Master Tech Skills
+                <span className="block text-teal-700 dark:text-teal-400 mt-1">
+                  Through Living Studio
+                </span>
+              </h1>
 
-            <p className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed">
-              <strong className="text-foreground font-semibold">
-                Learn Smarter. Learn Personally. Learn with AI.
-              </strong>{" "}
-              Switch seamlessly between annotated presentation decks, HD lecture rooms, timed exam
-              simulations, and a citation-grounded FAISS Study Copilot.
-            </p>
+              <p className="text-base sm:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                <strong className="text-foreground font-semibold">
+                  Learn Smarter. Learn Personally. Learn with AI.
+                </strong>{" "}
+                Your interactive workspace for slide decks, lecture labs, timed exams, and verified
+                FAISS tutoring.
+              </p>
+            </div>
 
             {/* Primary CTA Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-1">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
               <Link to="/login">
                 <button
                   type="button"
-                  className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-[0_4px_0_0_#115e59] hover:shadow-[0_2px_0_0_#115e59] hover:translate-y-0.5 active:translate-y-1 transition-all flex items-center gap-2.5 text-sm sm:text-base cursor-pointer"
+                  className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-7 py-3.5 rounded-xl shadow-[0_4px_0_0_#0f766e] hover:shadow-[0_2px_0_0_#0f766e] hover:translate-y-0.5 active:translate-y-1 flex items-center gap-2.5 text-sm sm:text-base transition-all cursor-pointer"
                 >
-                  <span>Start Learning Now</span>
+                  <span>Log in to learn</span>
                   <span className="sr-only">Enter Learning Platform</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -210,266 +199,196 @@ export function LandingPage() {
               <Link to="/courses">
                 <button
                   type="button"
-                  className="bg-card hover:bg-secondary text-foreground border border-border font-semibold px-5 py-3.5 rounded-xl text-sm sm:text-base transition-all flex items-center gap-2 shadow-xs kinetic-press cursor-pointer"
+                  className="bg-card hover:bg-secondary text-foreground border border-border font-semibold px-6 py-3.5 rounded-xl text-sm sm:text-base transition-all flex items-center gap-2 shadow-xs kinetic-press cursor-pointer"
                 >
                   <BookOpen className="w-4 h-4 text-orange-500" />
-                  <span>Explore Catalog</span>
+                  <span>Browse Curricula</span>
                 </button>
               </Link>
             </div>
 
-            {/* Crisp Telemetry Strip */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/80 max-w-lg">
-              <div>
-                <p className="font-display text-2xl font-bold text-foreground">4</p>
-                <p className="text-xs text-muted-foreground">Specialized Tracks</p>
-              </div>
-              <div>
-                <p className="font-display text-2xl font-bold text-teal-700 dark:text-teal-400">
-                  1,250+
-                </p>
-                <p className="text-xs text-muted-foreground">RAG Vector Chunks</p>
-              </div>
-              <div>
-                <p className="font-display text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  100%
-                </p>
-                <p className="text-xs text-muted-foreground">Interactive Labs</p>
-              </div>
+            {/* Compact Studio Pillars Strip */}
+            <div className="pt-4 border-t border-border/80 flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
+                <strong className="text-foreground">1,240+</strong> RAG Chunks
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-orange-500" />
+                <strong className="text-foreground">4</strong> Engineering Tracks
+              </span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                Zero Setup Demo Sign-In
+              </span>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Live Interactive Studio Workbench Preview */}
-          <div className="lg:col-span-6">
-            <div className="studio-card p-5 sm:p-6 space-y-5 relative overflow-hidden">
-              {/* Top window chrome */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-400/80" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-teal-500/80" />
-                  <span className="text-[11px] font-mono text-muted-foreground ml-1.5">
-                    studio://preview-workbench
-                  </span>
-                </div>
-                <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">
-                  Interactive Sandbox
+          {/* RIGHT COLUMN: Asymmetric Interactive Studio Collage (Replaces 3 JAIN Oval Portrait Columns) */}
+          <div className="lg:col-span-6 relative">
+            <div className="grid grid-cols-12 gap-3.5 items-stretch">
+              {/* Top Interactive Track Switcher Bar across Collage */}
+              <div className="col-span-12 flex flex-wrap items-center justify-between gap-2 bg-card border border-border rounded-2xl p-2 shadow-xs">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground pl-2">
+                  Click Track to Preview:
                 </span>
-              </div>
-
-              {/* Interactive Track Selector Pills */}
-              <div>
-                <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
-                  1 · Choose a live curriculum to inspect
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {INTERACTIVE_TRACKS.map((track, idx) => {
-                    const isSelected = idx === selectedTrackIdx;
+                <div className="flex flex-wrap gap-1.5">
+                  {STUDIO_SPOTLIGHTS.map((item, idx) => {
+                    const isActive = idx === activeIndex;
                     return (
                       <button
-                        key={track.id}
+                        key={item.id}
                         type="button"
-                        onClick={() => setSelectedTrackIdx(idx)}
-                        className={`text-left px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                          isSelected
-                            ? "bg-foreground text-background border-foreground shadow-sm"
-                            : "bg-secondary/60 text-foreground/80 border-border hover:bg-secondary"
+                        onClick={() => setActiveIndex(idx)}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isActive
+                            ? `${item.accentBg} text-white shadow-xs`
+                            : "bg-secondary/70 text-foreground/80 hover:bg-secondary"
                         }`}
                       >
-                        <span className="block text-[10px] font-mono opacity-75">
-                          {track.tag}
-                        </span>
-                        <span className="block truncate mt-0.5">
-                          {track.title.split(" ")[0]} {track.title.split(" ")[1]}
-                        </span>
+                        {item.badge}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Active Track Card & Interactive Mode Switcher */}
-              <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <div>
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[11px] font-mono font-medium ${activeTrack.chipBg}`}
-                    >
-                      {activeTrack.chunksIndexed} Indexed Chunks
+              {/* Left Tall Mosaic Card: Architectural Studio Photography + Cohort Card */}
+              <div className="col-span-12 sm:col-span-5 studio-card overflow-hidden flex flex-col justify-between group">
+                <div className="relative h-52 sm:h-60 overflow-hidden bg-secondary">
+                  <img
+                    src={spotlight.mentorAvatar}
+                    alt={`${spotlight.mentorName} — ${spotlight.courseTitle}`}
+                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/15 to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <span className="inline-block text-[10px] font-mono uppercase tracking-wider bg-teal-600/90 px-2 py-0.5 rounded-md mb-1">
+                      {spotlight.badge} Track
                     </span>
-                    <h2 className="font-display font-bold text-lg text-foreground mt-2">
-                      {activeTrack.title}
-                    </h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {activeTrack.instructor} · {activeTrack.duration}
+                    <p className="font-display text-sm font-bold leading-snug line-clamp-2">
+                      {spotlight.courseTitle}
                     </p>
-                  </div>
-
-                  {/* Mode Switch */}
-                  <div className="inline-flex p-1 rounded-lg bg-background border border-border shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setPlaygroundTab("copilot")}
-                      className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
-                        playgroundTab === "copilot"
-                          ? "bg-teal-600 text-white"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      AI Citation
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlaygroundTab("syllabus")}
-                      className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
-                        playgroundTab === "syllabus"
-                          ? "bg-teal-600 text-white"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Modules
-                    </button>
                   </div>
                 </div>
 
-                {playgroundTab === "copilot" ? (
-                  <div className="space-y-3 animate-fade-in">
-                    <div className="p-3 rounded-lg bg-card border border-border flex items-start gap-2.5">
-                      <Terminal className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
-                      <div className="text-xs">
-                        <span className="font-mono text-[10px] uppercase text-muted-foreground block">
-                          Sample Learner Query
-                        </span>
-                        <span className="font-semibold text-foreground">
-                          "{activeTrack.sampleQuestion}"
-                        </span>
-                      </div>
+                <div className="p-3.5 bg-card space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-bold text-foreground">{spotlight.mentorName}</p>
+                      <p className="text-[10px] text-muted-foreground">{spotlight.mentorRole}</p>
                     </div>
+                    <Link
+                      to="/login"
+                      className="w-7 h-7 rounded-lg bg-secondary hover:bg-teal-600 hover:text-white flex items-center justify-center transition-colors"
+                      title="Open track"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                    </Link>
+                  </div>
+                  <p className="text-[10px] font-mono text-muted-foreground pt-1 border-t border-border">
+                    {spotlight.stats}
+                  </p>
+                </div>
+              </div>
 
-                    <div className="p-3.5 rounded-lg bg-card border border-teal-500/30 space-y-2">
-                      <div className="flex items-center justify-between gap-2 text-[11px] font-mono">
-                        <span className="inline-flex items-center gap-1 text-teal-700 dark:text-teal-400 font-semibold">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Cited Grounded Response
-                        </span>
-                        <span className="px-2 py-0.5 rounded bg-teal-500/10 text-teal-700 dark:text-teal-300">
-                          {activeTrack.similarityScore}
-                        </span>
-                      </div>
-                      <p className="text-xs leading-relaxed text-foreground/90">
-                        {activeTrack.answerPreview}
-                      </p>
-                      <div className="pt-1 flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
-                        <FileText className="w-3 h-3 text-orange-500" />
-                        <span>Source: {activeTrack.citationSource}</span>
-                      </div>
+              {/* Right Interactive Stack: Live AI RAG Card + Telemetry Tiles */}
+              <div className="col-span-12 sm:col-span-7 flex flex-col gap-3.5 justify-between">
+                {/* Interactive Live AI Study Copilot Output Card */}
+                <div className="studio-card p-4 space-y-3 flex-1 flex flex-col justify-between border-t-4 border-t-teal-600">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-teal-700 dark:text-teal-300">
+                      <Cpu className="w-3.5 h-3.5" />
+                      AI STUDY COPILOT · FAISS
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowCitations((v) => !v)}
+                      className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-secondary hover:bg-secondary/80 text-foreground cursor-pointer"
+                    >
+                      {showCitations ? "Hide Citation" : "Show Citation"}
+                    </button>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-secondary/60 border border-border flex items-start gap-2 text-xs">
+                    <Terminal className="w-3.5 h-3.5 text-orange-500 shrink-0 mt-0.5" />
+                    <span className="font-semibold text-foreground leading-snug">
+                      &ldquo;{spotlight.query}&rdquo;
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {spotlight.snippet}
+                  </p>
+
+                  {showCitations && (
+                    <div className="p-2.5 rounded-xl bg-teal-500/8 border border-teal-500/25 flex items-center justify-between gap-2 text-[10px] font-mono animate-fade-in">
+                      <span className="flex items-center gap-1.5 text-foreground truncate">
+                        <FileText className="w-3 h-3 text-orange-500 shrink-0" />
+                        <span className="truncate">{spotlight.citation}</span>
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-teal-600 text-white font-bold shrink-0">
+                        {spotlight.score}
+                      </span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2 animate-fade-in">
-                    {activeTrack.modules.map((mod, mIdx) => (
-                      <div
-                        key={mod}
-                        className="p-3 rounded-lg bg-card border border-border flex items-center justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-6 h-6 rounded-md bg-teal-500/15 text-teal-700 dark:text-teal-300 font-mono text-xs font-bold flex items-center justify-center">
-                            0{mIdx + 1}
-                          </span>
-                          <span className="text-xs font-semibold text-foreground">{mod}</span>
-                        </div>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground">
-                          <Play className="w-3 h-3 text-orange-500" />
-                          Deck + Lab
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  )}
+                </div>
 
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-muted-foreground">
-                    Instant demo credentials available inside sign-in.
-                  </span>
+                {/* Bottom Dual Mini-Studio Feature Cards */}
+                <div className="grid grid-cols-2 gap-3.5">
+                  <Link
+                    to="/courses"
+                    className="studio-card p-3.5 hover:border-orange-500/50 transition-colors group"
+                  >
+                    <span className="text-[10px] font-mono uppercase text-orange-600 dark:text-orange-400 font-bold block">
+                      Interactive
+                    </span>
+                    <p className="font-display text-sm font-bold text-foreground mt-0.5 group-hover:text-orange-600 transition-colors">
+                      Zen Slide Decks →
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Notes, flashcards &amp; keyboard nav
+                    </p>
+                  </Link>
+
                   <Link
                     to="/login"
-                    className="text-xs font-bold text-teal-700 dark:text-teal-400 hover:underline inline-flex items-center gap-1"
+                    className="studio-card p-3.5 hover:border-teal-500/50 transition-colors group"
                   >
-                    Try full workspace <ArrowRight className="w-3 h-3" />
+                    <span className="text-[10px] font-mono uppercase text-teal-700 dark:text-teal-400 font-bold block">
+                      Adaptive ML
+                    </span>
+                    <p className="font-display text-sm font-bold text-foreground mt-0.5 group-hover:text-teal-700 transition-colors">
+                      Exam Arena →
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Timed quizzes &amp; CGPA simulator
+                    </p>
                   </Link>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Interactive Feature Bento Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="studio-card p-5 hover:border-teal-500/40 transition-colors">
-            <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-700 dark:text-teal-400 flex items-center justify-center mb-3">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <h3 className="font-display font-bold text-sm text-foreground">
-              FAISS Study Copilot
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Ask course-scoped questions and verify answers against cited slide chunks.
-            </p>
-          </div>
-
-          <div className="studio-card p-5 hover:border-orange-500/40 transition-colors">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center mb-3">
-              <Layers className="w-4 h-4" />
-            </div>
-            <h3 className="font-display font-bold text-sm text-foreground">
-              Zen Classroom & Notes
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Slide thumbnail strips, adjustable typography, flashcards, and persistent scratchpads.
-            </p>
-          </div>
-
-          <div className="studio-card p-5 hover:border-blue-500/40 transition-colors">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
-              <Cpu className="w-4 h-4" />
-            </div>
-            <h3 className="font-display font-bold text-sm text-foreground">
-              ML Mastery Telemetry
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Adaptive topic recommendations paired with live Focus Pomodoro sessions.
-            </p>
-          </div>
-
-          <div className="studio-card p-5 hover:border-emerald-500/40 transition-colors">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <h3 className="font-display font-bold text-sm text-foreground">
-              Timed Exam Arena
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Keyboard shortcuts, confidence flags, question matrix navigation, and instant grading.
-            </p>
-          </div>
-        </section>
       </main>
 
-      {/* Compact Studio Footer */}
-      <footer className="w-full max-w-7xl mx-auto px-5 sm:px-10 py-5 border-t border-border/70 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-3 relative z-10">
+      {/* Clean Minimal Footer */}
+      <footer className="w-full max-w-7xl mx-auto px-6 sm:px-10 py-4 border-t border-border/70 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-2 relative z-10">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-          <span>Learnova AI Studio · Dual-Engine RAG & Adaptive ML Platform</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span>© 2026 Learnova AI Studio · Dual-Engine RAG &amp; Adaptive ML LMS</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 text-[11px]">
           <Link to="/courses" className="hover:text-foreground transition-colors">
             Courses
           </Link>
+          <span>·</span>
           <Link to="/status" className="hover:text-foreground transition-colors">
             System Status
           </Link>
+          <span>·</span>
           <Link to="/login" className="hover:text-foreground font-semibold transition-colors">
-            Sign In
+            Log In
           </Link>
         </div>
       </footer>
