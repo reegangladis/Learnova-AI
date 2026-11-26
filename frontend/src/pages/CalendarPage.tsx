@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CalendarEvent {
@@ -12,8 +13,18 @@ interface CalendarEvent {
 }
 
 export function CalendarPage() {
+  const navigate = useNavigate();
   const [selectedView, setSelectedView] = useState<"month" | "week" | "day" | "upcoming">("month");
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
+  const [selectedDayNum, setSelectedDayNum] = useState<number>(21);
+
+  const courseRouteMap: Record<CalendarEvent["courseId"], string> = {
+    devops: "/courses/c-devops-01",
+    "ai-llm": "/courses/c-ai-01",
+    "python-data": "/courses/c-python-01",
+    cybersecurity: "/courses/c-security-01",
+    general: "/courses",
+  };
 
   // Real Learnova curriculum events based on the 4 enterprise courses seeded in Learnova AI
   const events: CalendarEvent[] = [
@@ -255,13 +266,13 @@ export function CalendarPage() {
   const getEventBadge = (type: CalendarEvent["type"]) => {
     switch (type) {
       case "deadline":
-        return "bg-rose-500/10 text-rose-700 border-rose-300";
+        return "bg-rose-500/12 text-rose-700 dark:text-rose-300 border-rose-500/25";
       case "live":
-        return "bg-purple-500/10 text-purple-700 border-purple-300";
+        return "bg-orange-500/12 text-orange-700 dark:text-orange-300 border-orange-500/25";
       case "course":
-        return "bg-blue-500/10 text-blue-700 border-blue-300";
+        return "bg-teal-500/12 text-teal-700 dark:text-teal-300 border-teal-500/25";
       default:
-        return "bg-slate-100 text-slate-700 border-slate-300";
+        return "bg-secondary text-foreground border-border";
     }
   };
 
@@ -270,79 +281,82 @@ export function CalendarPage() {
       case "deadline":
         return "bg-rose-500";
       case "live":
-        return "bg-purple-500";
+        return "bg-orange-500";
       case "course":
-        return "bg-blue-500";
+        return "bg-teal-600";
       case "user":
         return "bg-emerald-500";
       case "site":
-        return "bg-slate-900";
+        return "bg-foreground";
     }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Header Controls */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Month selector & arrows */}
+      <div className="studio-card p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5">
+          <div className="flex items-center gap-1 border border-border rounded-xl p-0.5 bg-background">
             <button
               type="button"
-              className="p-1 rounded-md text-slate-600 hover:bg-slate-100 transition-colors"
-              title="Previous month"
+              onClick={() => setSelectedDayNum((d) => Math.max(1, d - 1))}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+              title="Previous day focus"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               type="button"
-              className="p-1 rounded-md text-slate-600 hover:bg-slate-100 transition-colors"
-              title="Next month"
+              onClick={() => setSelectedDayNum((d) => Math.min(30, d + 1))}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+              title="Next day focus"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             November 2026
           </h2>
 
           <button
             type="button"
-            className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition-colors"
+            onClick={() => {
+              setSelectedDayNum(21);
+              setSelectedView("day");
+            }}
+            className="text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
           >
-            Today
+            Today (21st)
           </button>
         </div>
 
         {/* Course Filter Dropdown & View Toggles */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Real Learnova course filter select */}
           <div className="flex items-center gap-2">
             <select
               value={selectedCourse}
               onChange={(e) => setSelectedCourse(e.target.value)}
-              className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              className="text-xs font-semibold bg-background border border-input rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-teal-500/40"
             >
               <option value="all">All Learnova Courses</option>
-              <option value="devops">Full-Stack Cloud & DevOps Engineering</option>
-              <option value="ai-llm">Enterprise AI Engineering & Large Language Models</option>
-              <option value="python-data">Advanced Python & Distributed Data Systems</option>
-              <option value="cybersecurity">Enterprise Cybersecurity & Zero Trust Systems</option>
+              <option value="devops">Full-Stack Cloud &amp; DevOps Engineering</option>
+              <option value="ai-llm">Enterprise AI Engineering &amp; Large Language Models</option>
+              <option value="python-data">Advanced Python &amp; Distributed Data Systems</option>
+              <option value="cybersecurity">Enterprise Cybersecurity &amp; Zero Trust Systems</option>
             </select>
           </div>
 
-          {/* View selector pills */}
-          <div className="inline-flex rounded-lg bg-slate-100 p-1 gap-1 text-xs font-semibold">
+          <div className="inline-flex rounded-xl bg-secondary p-1 gap-1 text-xs font-semibold">
             {(["month", "week", "day", "upcoming"] as const).map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setSelectedView(v)}
-                className={`px-3 py-1 rounded-md capitalize transition-colors ${
+                className={`px-3 py-1 rounded-lg capitalize transition-colors cursor-pointer ${
                   selectedView === v
-                    ? "bg-[#0B374D] text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-teal-600 text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {v}
@@ -353,91 +367,94 @@ export function CalendarPage() {
       </div>
 
       {/* Legend Row */}
-      <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600 px-1">
+      <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-muted-foreground px-1">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
           <span>Deadlines</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+          <span className="w-2.5 h-2.5 rounded-full bg-teal-600" />
           <span>Course Modules</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+          <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
           <span>Live Workshops</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
           <span>Self-Assessments</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-slate-900" />
-          <span>Platform Exams</span>
-        </div>
       </div>
 
       {/* Views Rendering */}
       {selectedView === "month" && (
-        /* Full Monthly Grid */
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80 text-center py-2 text-[11px] font-bold text-slate-500 tracking-wider">
+        <div className="studio-card overflow-hidden">
+          <div className="grid grid-cols-7 border-b border-border bg-secondary/50 text-center py-2.5 text-[11px] font-mono font-bold text-muted-foreground tracking-wider">
             {weekdays.map((w) => (
               <div key={w}>{w}</div>
             ))}
           </div>
 
-          {/* Days Grid */}
-          <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-slate-100">
-            {/* Empty padding cells for days prior to 1st */}
+          <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-border">
             {Array.from({ length: paddingDays }).map((_, i) => (
-              <div key={`pad-${i}`} className="min-h-[105px] p-2 bg-slate-50/30 text-slate-300 text-xs font-semibold" />
+              <div key={`pad-${i}`} className="min-h-[105px] p-2 bg-secondary/20" />
             ))}
 
-            {/* Actual days of November */}
             {Array.from({ length: totalDays }).map((_, i) => {
               const dayNum = i + 1;
               const isToday = dayNum === 21;
+              const isPicked = dayNum === selectedDayNum;
               const dayEvents = filteredEvents.filter((e) => e.day === dayNum);
 
               return (
                 <div
                   key={`day-${dayNum}`}
-                  className={`min-h-[115px] p-2 transition-colors flex flex-col justify-between ${
-                    isToday ? "bg-amber-50/40" : "hover:bg-slate-50/50"
+                  onClick={() => setSelectedDayNum(dayNum)}
+                  className={`min-h-[115px] p-2 transition-colors flex flex-col justify-between cursor-pointer ${
+                    isPicked
+                      ? "bg-teal-500/8 ring-1 ring-inset ring-teal-500/40"
+                      : isToday
+                      ? "bg-orange-500/5"
+                      : "hover:bg-secondary/40"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span
-                      className={`text-xs font-extrabold w-6 h-6 flex items-center justify-center rounded-full ${
-                        isToday
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "text-slate-700"
+                      className={`text-xs font-mono font-bold w-6 h-6 flex items-center justify-center rounded-full ${
+                        isPicked
+                          ? "bg-teal-600 text-white shadow-xs"
+                          : isToday
+                          ? "bg-orange-500 text-white"
+                          : "text-foreground"
                       }`}
                     >
                       {dayNum}
                     </span>
                     {dayEvents.length > 0 && (
-                      <span className="text-[10px] text-slate-400 font-medium">
+                      <span className="text-[10px] font-mono text-muted-foreground">
                         {dayEvents.length} {dayEvents.length === 1 ? "item" : "items"}
                       </span>
                     )}
                   </div>
 
-                  {/* Event pills inside the day */}
                   <div className="space-y-1 flex-1 overflow-y-auto max-h-[85px]">
                     {dayEvents.map((evt) => (
-                      <div
+                      <button
                         key={evt.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(courseRouteMap[evt.courseId]);
+                        }}
                         title={`${evt.time} · [${evt.courseName}] ${evt.title}`}
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium truncate border flex items-center gap-1 ${getEventBadge(
+                        className={`w-full text-left px-1.5 py-0.5 rounded text-[10px] font-medium truncate border flex items-center gap-1 cursor-pointer hover:opacity-90 ${getEventBadge(
                           evt.type
                         )}`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${getEventDot(evt.type)}`} />
                         <span className="font-mono font-bold shrink-0">{evt.time}</span>
                         <span className="truncate">{evt.title}</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -448,14 +465,19 @@ export function CalendarPage() {
       )}
 
       {selectedView === "week" && (
-        /* Week View (16 Nov - 22 Nov 2026) */
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="studio-card p-6 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-border">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Week of 16 Nov – 22 Nov 2026</h3>
-              <p className="text-xs text-slate-500">Learnova course lectures, hands-on labs, and assessment checkpoints.</p>
+              <h3 className="font-display text-base font-bold text-foreground">
+                Week of 16 Nov – 22 Nov 2026
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Learnova course lectures, hands-on labs, and assessment checkpoints.
+              </p>
             </div>
-            <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-full">Current Week</span>
+            <span className="text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-500/10 px-2.5 py-1 rounded-full">
+              Current Week
+            </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
             {[16, 17, 18, 19, 20, 21, 22].map((dayNum, idx) => {
@@ -466,32 +488,46 @@ export function CalendarPage() {
                 <div
                   key={dayNum}
                   className={`rounded-xl border p-3 flex flex-col justify-between min-h-[240px] ${
-                    isToday ? "border-indigo-500 bg-indigo-50/20 shadow-xs" : "border-slate-200 bg-slate-50/40"
+                    isToday ? "border-teal-500 bg-teal-500/5" : "border-border bg-secondary/30"
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{dayName}</span>
-                      <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? "bg-indigo-600 text-white" : "text-slate-700"}`}>
+                      <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase">
+                        {dayName}
+                      </span>
+                      <span
+                        className={`text-xs font-mono font-bold w-6 h-6 flex items-center justify-center rounded-full ${
+                          isToday ? "bg-teal-600 text-white" : "text-foreground"
+                        }`}
+                      >
                         {dayNum}
                       </span>
                     </div>
                     <div className="space-y-1.5">
                       {dayEvents.map((evt) => (
-                        <div
+                        <button
                           key={evt.id}
-                          className={`p-2 rounded-lg text-[10px] border ${getEventBadge(evt.type)}`}
+                          type="button"
+                          onClick={() => navigate(courseRouteMap[evt.courseId])}
+                          className={`w-full text-left p-2 rounded-lg text-[10px] border cursor-pointer ${getEventBadge(
+                            evt.type
+                          )}`}
                         >
-                          <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold mb-0.5">
-                            <span className="font-mono">{evt.time}</span>
+                          <div className="flex items-center justify-between text-[9px] font-mono font-bold mb-0.5 opacity-80">
+                            <span>{evt.time}</span>
                             <span className="uppercase">{evt.type}</span>
                           </div>
-                          <span className="font-semibold line-clamp-2">{evt.title}</span>
-                          <span className="text-[9px] text-slate-400 block truncate mt-1">{evt.courseName}</span>
-                        </div>
+                          <span className="font-semibold line-clamp-2 block">{evt.title}</span>
+                          <span className="text-[9px] opacity-75 block truncate mt-1">
+                            {evt.courseName}
+                          </span>
+                        </button>
                       ))}
                       {dayEvents.length === 0 && (
-                        <p className="text-[11px] text-slate-400 italic pt-6 text-center">No schedule</p>
+                        <p className="text-[11px] text-muted-foreground italic pt-6 text-center">
+                          No schedule
+                        </p>
                       )}
                     </div>
                   </div>
@@ -503,46 +539,56 @@ export function CalendarPage() {
       )}
 
       {selectedView === "day" && (
-        /* Day View */
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-8 space-y-6">
-          <div className="max-w-xl mx-auto space-y-2 text-center">
-            <h3 className="text-xl font-bold text-slate-900">Saturday, 21 November 2026 (Today)</h3>
-            <p className="text-sm text-slate-500">Scheduled events for Learnova courses on this date.</p>
+        <div className="studio-card p-8 space-y-6">
+          <div className="max-w-xl mx-auto space-y-1 text-center">
+            <h3 className="font-display text-xl font-bold text-foreground">
+              November {selectedDayNum}, 2026 {selectedDayNum === 21 ? "(Today)" : ""}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Click any day or event to jump straight into its Learnova course track.
+            </p>
           </div>
 
           <div className="max-w-2xl mx-auto space-y-3">
-            {filteredEvents.filter((e) => e.day === 21).length > 0 ? (
+            {filteredEvents.filter((e) => e.day === selectedDayNum).length > 0 ? (
               filteredEvents
-                .filter((e) => e.day === 21)
+                .filter((e) => e.day === selectedDayNum)
                 .map((evt) => (
                   <div
                     key={evt.id}
-                    className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between gap-4"
+                    className="p-4 rounded-xl border border-border bg-secondary/40 flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-10 rounded-full ${getEventDot(evt.type)}`} />
+                      <div className={`w-2.5 h-10 rounded-full ${getEventDot(evt.type)}`} />
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-indigo-700">{evt.time}</span>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-200/80 px-2 py-0.5 rounded">
+                          <span className="text-xs font-mono font-bold text-teal-700 dark:text-teal-400">
+                            {evt.time}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold uppercase text-muted-foreground bg-card px-2 py-0.5 rounded border border-border">
                             {evt.type}
                           </span>
                         </div>
-                        <h4 className="text-sm font-bold text-slate-900 mt-0.5">{evt.title}</h4>
-                        <p className="text-xs text-slate-500">{evt.courseName}</p>
+                        <h4 className="font-display text-sm font-bold text-foreground mt-0.5">
+                          {evt.title}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">{evt.courseName}</p>
                       </div>
                     </div>
                     <button
                       type="button"
-                      className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs"
+                      onClick={() => navigate(courseRouteMap[evt.courseId])}
+                      className="text-xs font-bold px-3.5 py-1.5 rounded-xl bg-teal-600 text-white hover:bg-teal-700 cursor-pointer shrink-0"
                     >
-                      Access →
+                      Open Course →
                     </button>
                   </div>
                 ))
             ) : (
-              <div className="py-12 border border-dashed border-slate-200 rounded-xl bg-slate-50/60 text-center">
-                <p className="text-sm font-medium text-slate-400">No scheduled sessions for the selected course on this date.</p>
+              <div className="py-12 border border-dashed border-border rounded-xl text-center">
+                <p className="text-sm font-medium text-muted-foreground">
+                  No scheduled sessions on November {selectedDayNum}.
+                </p>
               </div>
             )}
           </div>
@@ -550,87 +596,81 @@ export function CalendarPage() {
       )}
 
       {selectedView === "upcoming" && (
-        /* Upcoming View */
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
-          <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+        <div className="studio-card p-6 space-y-6">
+          <div className="border-b border-border pb-3 flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Upcoming Learnova Course Milestones</h3>
-              <p className="text-xs text-slate-500">Live workshops, module deadlines, and certification checkpoints</p>
+              <h3 className="font-display text-base font-bold text-foreground">
+                Upcoming Learnova Course Milestones
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Live workshops, module deadlines, and certification checkpoints
+              </p>
             </div>
-            <span className="text-xs text-slate-500 font-medium">Sorted chronologically</span>
+            <span className="text-xs font-mono text-muted-foreground">Chronological</span>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">THIS WEEK'S ACTIVE SESSIONS</span>
-              
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-4 hover:border-indigo-300 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-10 rounded-full bg-rose-500" />
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                      Kubernetes Production Ingress & Storage Exam
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Saturday, 21 Nov · 09:00 AM · Full-Stack Cloud & DevOps Engineering
-                    </p>
-                  </div>
+          <div className="space-y-3">
+            <div className="p-4 rounded-xl border border-border bg-secondary/35 flex items-center justify-between gap-4 hover:border-teal-500/40 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-10 rounded-full bg-rose-500" />
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-foreground">
+                    Kubernetes Production Ingress &amp; Storage Exam
+                  </h4>
+                  <p className="text-[11px] font-mono text-muted-foreground">
+                    Saturday, 21 Nov · 09:00 AM · Full-Stack Cloud &amp; DevOps Engineering
+                  </p>
                 </div>
-                <button type="button" className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
-                  Open Quiz →
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => navigate("/courses/c-devops-01")}
+                className="text-xs font-bold px-3.5 py-1.5 rounded-xl bg-teal-600 text-white hover:bg-teal-700 cursor-pointer shrink-0"
+              >
+                Open Track →
+              </button>
+            </div>
 
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-4 hover:border-purple-300 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-10 rounded-full bg-purple-500" />
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                      Cloud Security Incident Response Live Simulation
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Saturday, 21 Nov · 02:30 PM · Enterprise Cybersecurity & Zero Trust Systems
-                    </p>
-                  </div>
+            <div className="p-4 rounded-xl border border-border bg-secondary/35 flex items-center justify-between gap-4 hover:border-orange-500/40 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-10 rounded-full bg-orange-500" />
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-foreground">
+                    Cloud Security Incident Response Live Simulation
+                  </h4>
+                  <p className="text-[11px] font-mono text-muted-foreground">
+                    Saturday, 21 Nov · 02:30 PM · Enterprise Cybersecurity &amp; Zero Trust Systems
+                  </p>
                 </div>
-                <button type="button" className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700">
-                  Join Workshop →
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => navigate("/courses/c-security-01")}
+                className="text-xs font-bold px-3.5 py-1.5 rounded-xl bg-orange-500 text-white hover:bg-orange-600 cursor-pointer shrink-0"
+              >
+                Join Workshop →
+              </button>
+            </div>
 
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-4 hover:border-purple-300 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-10 rounded-full bg-purple-500" />
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                      Enterprise AI Model Guardrails & Evals Live Stream
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Saturday, 28 Nov · 02:30 PM · Enterprise AI Engineering & Large Language Models
-                    </p>
-                  </div>
+            <div className="p-4 rounded-xl border border-border bg-secondary/35 flex items-center justify-between gap-4 hover:border-teal-500/40 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-10 rounded-full bg-teal-600" />
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-foreground">
+                    Enterprise AI Model Guardrails &amp; Evals Live Stream
+                  </h4>
+                  <p className="text-[11px] font-mono text-muted-foreground">
+                    Saturday, 28 Nov · 02:30 PM · Enterprise AI Engineering &amp; Large Language Models
+                  </p>
                 </div>
-                <button type="button" className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700">
-                  Join Stream →
-                </button>
               </div>
-
-              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex items-center justify-between gap-4 hover:border-rose-300 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-10 rounded-full bg-rose-500" />
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                      Zero Trust & mTLS Knowledge Check Assessment
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Saturday, 28 Nov · 11:59 PM · Enterprise Cybersecurity & Zero Trust Systems
-                    </p>
-                  </div>
-                </div>
-                <button type="button" className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700">
-                  Take Exam →
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/courses/c-ai-01")}
+                className="text-xs font-bold px-3.5 py-1.5 rounded-xl bg-teal-600 text-white hover:bg-teal-700 cursor-pointer shrink-0"
+              >
+                Open Track →
+              </button>
             </div>
           </div>
         </div>

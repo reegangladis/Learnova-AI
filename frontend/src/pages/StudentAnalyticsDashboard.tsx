@@ -1,19 +1,21 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowRight,
+  Award,
   BookOpen,
+  Bot,
+  Calendar,
   Clock,
   Flame,
   GraduationCap,
+  Layers,
   Play,
   PlayCircle,
-  Video,
-  ArrowRight,
-  TrendingUp,
   Sparkles,
-  Award,
-  Bot,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -24,153 +26,223 @@ import { analyticsService } from "@/services/analyticsService";
 import { CourseRecommendationsCard } from "@/components/ml/CourseRecommendationsCard";
 import { LearningPathCard } from "@/components/ml/LearningPathCard";
 import { LearningInsightsCard } from "@/components/ml/LearningInsightsCard";
+import { SEEDED_COURSES } from "@/data/courseCurricula";
+
+const WEEKLY_STUDY_DATA = [
+  { day: "Mon", minutes: 35, lessons: 1 },
+  { day: "Tue", minutes: 55, lessons: 2 },
+  { day: "Wed", minutes: 80, lessons: 3 },
+  { day: "Thu", minutes: 95, lessons: 3 },
+  { day: "Fri", minutes: 45, lessons: 1 },
+  { day: "Sat", minutes: 70, lessons: 2 },
+  { day: "Sun", minutes: 50, lessons: 2 },
+];
 
 export const StudentAnalyticsDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedDays, setSelectedDays] = useState<number>(30);
+  const [focusMode, setFocusMode] = useState<"deep_work" | "exam_prep">("deep_work");
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState<number>(60);
+  const [activeDayIdx, setActiveDayIdx] = useState<number>(3);
+  const [curriculumFilter, setCurriculumFilter] = useState<"all" | "intermediate" | "advanced">("all");
 
-  // 1. Fetch student overview metrics
-  const {
-    data: overview,
-  } = useQuery({
+  const { data: overview } = useQuery({
     queryKey: ["student_analytics_overview", selectedDays],
     queryFn: () => analyticsService.getStudentOverview(selectedDays),
   });
 
-  // 2. Fetch student recent activity and trends
-  const {
-    data: activityData,
-    isLoading: isActivityLoading,
-  } = useQuery({
+  const { data: activityData, isLoading: isActivityLoading } = useQuery({
     queryKey: ["student_analytics_activity", selectedDays],
     queryFn: () => analyticsService.getStudentActivity(selectedDays, 15),
   });
 
-  // 3. Fetch student quiz assessments history
-  const {
-    data: assessmentsData,
-    isLoading: isAssessmentsLoading,
-  } = useQuery({
+  const { data: assessmentsData, isLoading: isAssessmentsLoading } = useQuery({
     queryKey: ["student_analytics_assessments"],
     queryFn: () => analyticsService.getStudentAssessments(undefined, 1, 10),
   });
 
-  const studentName = user?.first_name || "Reegan";
-  const activeResumeCourse = overview?.resume_courses && overview.resume_courses.length > 0 ? overview.resume_courses[0] : null;
+  const studentName = user?.first_name || "Alex";
+  const activeResumeCourse =
+    overview?.resume_courses && overview.resume_courses.length > 0
+      ? overview.resume_courses[0]
+      : null;
+
+  const progressPct = overview?.overall_learning_progress ?? 0;
+  const activeDay = WEEKLY_STUDY_DATA[activeDayIdx];
+  const goalProgressPct = Math.min(
+    100,
+    Math.round((activeDay.minutes / dailyGoalMinutes) * 100)
+  );
+
+  const filteredCurricula = useMemo(() => {
+    if (curriculumFilter === "all") return SEEDED_COURSES;
+    return SEEDED_COURSES.filter((c) => c.difficulty === curriculumFilter);
+  }, [curriculumFilter]);
 
   return (
-    <div className="space-y-6" id="student-analytics-dashboard">
-      {/* Header with Title and DateRangeSelector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
-          <GraduationCap className="h-6 w-6 text-[#0B374D]" />
-          <span>Student Learning Analytics</span>
-        </h1>
-        <div className="flex items-center gap-3">
+    <div className="space-y-7" id="student-analytics-dashboard">
+      {/* Studio Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-teal-700 dark:text-teal-400 font-semibold">
+            Learnova Atelier · Personal Telemetry
+          </span>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2.5 mt-0.5">
+            <GraduationCap className="h-6 w-6 text-teal-600" />
+            <span>Student Learning Analytics</span>
+          </h1>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Interactive Study Mode Switch */}
+          <div className="inline-flex p-1 rounded-xl bg-secondary border border-border text-xs">
+            <button
+              type="button"
+              onClick={() => setFocusMode("deep_work")}
+              className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                focusMode === "deep_work"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Deep Studio
+            </button>
+            <button
+              type="button"
+              onClick={() => setFocusMode("exam_prep")}
+              className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                focusMode === "exam_prep"
+                  ? "bg-orange-500 text-white shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Exam Sprint
+            </button>
+          </div>
           <DateRangeSelector value={selectedDays} onChange={setSelectedDays} />
         </div>
       </div>
 
-      {/* ROW 1: GREETING BANNER & SEMESTER PROGRESS CARDS (Matching Screenshot 4) */}
+      {/* ROW 1: KINETIC STUDIO BENTO (8 + 4) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Card: Dark Petrol Greeting Banner (7 cols) */}
-        <div className="lg:col-span-7 bg-gradient-to-r from-[#0C3E56] via-[#093043] to-[#072433] text-white rounded-2xl p-6 sm:p-7 shadow-md border border-[#144E6D]/40 flex flex-col justify-between">
-          <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400">
-              SATURDAY, 21 NOVEMBER 2026
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Good evening, {studentName} 👋
+        {/* Left: Editorial Cockpit Panel (8 cols) */}
+        <div className="lg:col-span-7 studio-card p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-teal-500/8 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="space-y-3 relative z-10">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-[11px] font-mono font-semibold text-teal-700 dark:text-teal-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                {focusMode === "deep_work"
+                  ? "MODE: CONCEPT MASTERY & LABS"
+                  : "MODE: TIMED ASSESSMENT READINESS"}
+              </span>
+              <span className="text-xs font-mono text-muted-foreground">
+                Window: Last {selectedDays} Days
+              </span>
+            </div>
+
+            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Welcome back, {studentName}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
-              You have <strong>2 deadlines</strong> this week and <strong>7 live classes</strong> coming up. Here's where to pick up.
+
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
+              {focusMode === "deep_work"
+                ? `You have completed ${overview?.completed_lessons_count ?? 0} lessons across ${overview?.total_enrolled_courses ?? 0} active tracks. Keep momentum steady with interactive slide decks and grounded AI tutoring.`
+                : `Your current quiz pass rate sits at ${(overview?.quiz_pass_rate ?? 0).toFixed(1)}% with an average score of ${(overview?.average_quiz_score ?? 0).toFixed(1)}%. Launch a timed assessment or review weak concepts with FAISS Copilot.`}
             </p>
           </div>
 
-          {/* UP NEXT Countdown Pill Card */}
-          <div className="mt-5 p-4 rounded-xl bg-[#051C28]/85 border border-[#16506D]/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
+          {/* Interactive Goal Calibrator & Spotlight */}
+          <div className="mt-6 p-4 rounded-xl bg-secondary/50 border border-border space-y-3 relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-3 bg-amber-500 rounded-xs" />
-                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-400">
-                  UP NEXT
+                <Target className="w-4 h-4 text-orange-500" />
+                <span className="text-xs font-bold text-foreground">
+                  Daily Focus Target: {dailyGoalMinutes} mins/day
                 </span>
               </div>
-              <h4 className="text-xs sm:text-sm font-bold text-white leading-snug">
-                Kubernetes Production Ingress & Storage Exam
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                Full-Stack Cloud & DevOps · 21 Nov, 23:00
-              </p>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="text-[10px] font-mono font-bold bg-[#0D384D] px-2.5 py-1 rounded-md text-slate-200 border border-[#185370]">
-                00:41:32 REMAINING
+              <span className="text-xs font-mono font-semibold text-teal-700 dark:text-teal-400">
+                {activeDay.day} Hit {goalProgressPct}% of Target
               </span>
-              <button
-                type="button"
-                onClick={() => navigate("/my-courses")}
-                className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold px-3.5 py-1.5 rounded-md text-xs flex items-center gap-1.5 shadow-sm transition-all"
-              >
-                <span>Open</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+            </div>
+            <input
+              type="range"
+              min={30}
+              max={120}
+              step={15}
+              value={dailyGoalMinutes}
+              onChange={(e) => setDailyGoalMinutes(Number(e.target.value))}
+              aria-label="Daily Study Target Minutes"
+              className="w-full accent-teal-600 cursor-pointer"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-muted-foreground">
+              <span>30m Light</span>
+              <span>60m Balanced</span>
+              <span>90m Intensive</span>
+              <span>120m Deep Sprint</span>
             </div>
           </div>
 
           {/* Action Row */}
-          <div className="mt-5 flex flex-wrap items-center gap-3 pt-2">
+          <div className="mt-5 flex flex-wrap items-center gap-3 relative z-10">
             <button
               type="button"
               onClick={() => navigate("/my-courses")}
-              className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-sm transition-all"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-[0_2px_0_0_#0f766e] transition-all cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Resume last activity</span>
+              <span>My Course Studio</span>
             </button>
+
             <button
               type="button"
               onClick={() => navigate("/calendar")}
-              className="bg-white/10 hover:bg-white/15 text-white font-medium px-4 py-2 rounded-lg text-xs border border-white/15 flex items-center gap-2 transition-all"
+              className="bg-card hover:bg-secondary text-foreground font-semibold px-4 py-2.5 rounded-xl text-xs border border-border flex items-center gap-2 transition-all cursor-pointer"
             >
-              <Video className="w-3.5 h-3.5 text-sky-400" />
-              <span>Join next class</span>
+              <Calendar className="w-3.5 h-3.5 text-orange-500" />
+              <span>Study Schedule</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("open-ai-copilot"))}
+              className="bg-card hover:bg-secondary text-foreground font-semibold px-4 py-2.5 rounded-xl text-xs border border-border flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <Bot className="w-3.5 h-3.5 text-teal-600" />
+              <span>Ask Study Copilot</span>
             </button>
           </div>
         </div>
 
-        {/* Right Card: Semester Progress Card (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
+        {/* Right: Interactive Velocity & Progress Ring (5 cols) */}
+        <div className="lg:col-span-5 studio-card p-6 flex flex-col justify-between">
           <div>
-            {/* Header: Title and Streak */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Semester progress · Semester 1 · current
-                </h3>
-              </div>
-              <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-[11px] font-bold border border-amber-200">
-                <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <h3 className="font-display text-sm font-bold text-foreground">
+                Velocity &amp; Mastery Gauge
+              </h3>
+              <div className="flex items-center gap-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2.5 py-1 rounded-full text-[11px] font-bold border border-orange-500/20">
+                <Flame className="w-3.5 h-3.5 fill-current" />
                 <span>4-day streak</span>
               </div>
             </div>
 
-            {/* Circular Progress & Breakdown */}
+            {/* Radial Gauge + Live Counts */}
             <div className="flex items-center justify-between gap-6 py-4">
-              {/* Radial Donut progress ring */}
               <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                   <path
-                    className="text-slate-100"
+                    className="text-secondary"
                     strokeWidth="3.5"
                     stroke="currentColor"
                     fill="none"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                   <path
-                    className="text-sky-500 transition-all duration-1000 ease-out"
-                    strokeDasharray="32, 100"
+                    className="text-teal-600 transition-all duration-700 ease-out"
+                    strokeDasharray={`${Math.min(100, Math.max(0, progressPct))}, 100`}
                     strokeLinecap="round"
                     strokeWidth="3.5"
                     stroke="currentColor"
@@ -179,168 +251,182 @@ export const StudentAnalyticsDashboard: React.FC = () => {
                   />
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center text-center">
-                  <span className="text-lg font-extrabold text-slate-900 leading-none">32%</span>
-                  <span className="text-[7px] uppercase font-bold text-slate-400 mt-0.5">AVG. COMPLETE</span>
+                  <span className="font-display text-lg font-bold text-foreground leading-none">
+                    {progressPct.toFixed(0)}%
+                  </span>
+                  <span className="text-[8px] font-mono uppercase text-muted-foreground mt-0.5">
+                    COMPLETE
+                  </span>
                 </div>
               </div>
 
-              {/* Legend & Status numbers */}
-              <div className="space-y-1.5 flex-1 text-xs">
+              <div className="space-y-2 flex-1 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-slate-600">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" />
-                    Completed
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Completed Tracks
                   </span>
-                  <span className="font-bold text-slate-900">0</span>
+                  <span className="font-bold text-foreground">
+                    {overview?.courses_completed ?? 0}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-slate-600">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    In progress
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-teal-500" />
+                    Active In Progress
                   </span>
-                  <span className="font-bold text-slate-900">5</span>
+                  <span className="font-bold text-foreground">
+                    {overview?.courses_in_progress ?? 0}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-slate-600">
-                    <span className="w-2 h-2 rounded-full bg-slate-300" />
-                    Not started
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-orange-500" />
+                    Remaining Lessons
                   </span>
-                  <span className="font-bold text-slate-900">3</span>
+                  <span className="font-bold text-foreground">
+                    {overview?.remaining_lessons_count ?? 0}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Weekly Activity mini bar chart */}
+            {/* Interactive Weekly Cadence Bars (Click a day to inspect!) */}
             <div className="pt-2">
-              <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1.5">
-                <span>THIS WEEK</span>
-                <span>ACTIVITY</span>
+              <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground mb-2">
+                <span>WEEKLY CADENCE (CLICK DAY)</span>
+                <span className="text-foreground font-semibold">
+                  {activeDay.day}: {activeDay.minutes}m · {activeDay.lessons} lessons
+                </span>
               </div>
-              <div className="grid grid-cols-7 gap-1.5 items-end h-9 px-1">
-                <div className="bg-slate-100 rounded-xs h-2 w-full" title="Mon" />
-                <div className="bg-sky-400 rounded-xs h-5 w-full" title="Tue" />
-                <div className="bg-sky-500 rounded-xs h-8 w-full" title="Wed" />
-                <div className="bg-sky-600 rounded-xs h-9 w-full" title="Thu" />
-                <div className="bg-sky-400 rounded-xs h-4 w-full" title="Fri" />
-                <div className="bg-sky-500 rounded-xs h-6 w-full" title="Sat" />
-                <div className="bg-slate-100 rounded-xs h-2 w-full" title="Sun" />
+              <div className="grid grid-cols-7 gap-1.5 items-end h-14 px-1">
+                {WEEKLY_STUDY_DATA.map((d, idx) => {
+                  const isSelected = idx === activeDayIdx;
+                  const heightPct = Math.max(20, Math.round((d.minutes / 100) * 100));
+                  return (
+                    <button
+                      key={d.day}
+                      type="button"
+                      onClick={() => setActiveDayIdx(idx)}
+                      className="flex flex-col items-center justify-end h-full gap-1 group cursor-pointer"
+                      title={`${d.day}: ${d.minutes} mins`}
+                    >
+                      <div
+                        className={`w-full rounded-md transition-all ${
+                          isSelected
+                            ? "bg-orange-500 shadow-xs"
+                            : "bg-teal-500/35 group-hover:bg-teal-500/65"
+                        }`}
+                        style={{ height: `${heightPct}%` }}
+                      />
+                      <span
+                        className={`text-[9px] font-mono ${
+                          isSelected ? "font-bold text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        {d.day[0]}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* Focus next bar */}
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <div className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0">
-                <Play className="w-3 h-3 fill-white" />
-              </div>
-              <div className="overflow-hidden">
-                <span className="text-[9px] uppercase font-bold text-slate-400 block">FOCUS NEXT</span>
-                <p className="text-xs font-bold text-slate-800 truncate">
-                  1.4 Mathematical Foundation for Computer...
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate("/my-courses")}
-              className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold px-3 py-1 rounded-md text-xs shrink-0"
+          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-medium">Explore full syllabus catalog</span>
+            <Link
+              to="/courses"
+              className="font-bold text-teal-700 dark:text-teal-400 hover:underline flex items-center gap-1"
             >
-              Start →
-            </button>
+              <span>Catalog</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* ROW 2: 4 QUICK METRIC STAT CARDS (Screenshot 4 layout + Live Analytics Integration) */}
+      {/* ROW 2: 4 KPI TELEMETRY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Active Courses / Enrolled Courses */}
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="studio-card p-5 flex items-center justify-between">
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xl font-extrabold text-slate-900">
-                {overview?.total_enrolled_courses ?? 8}
-              </span>
-              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded-sm">
-                Semester 1
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium">Enrolled Courses</p>
+            <span className="font-display text-2xl font-bold text-foreground block">
+              {overview?.total_enrolled_courses ?? 0}
+            </span>
+            <p className="text-xs text-muted-foreground font-medium">Enrolled Courses</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-700 dark:text-teal-300 flex items-center justify-center">
             <BookOpen className="w-5 h-5" />
           </div>
         </div>
 
-        {/* Card 2: Curriculum Progress */}
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="studio-card p-5 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-2xl font-extrabold text-slate-900">
-              {overview?.overall_learning_progress ? `${overview.overall_learning_progress.toFixed(1)}%` : "32%"}
+            <span className="font-display text-2xl font-bold text-foreground block">
+              {`${(overview?.overall_learning_progress ?? 0).toFixed(1)}%`}
             </span>
-            <p className="text-xs text-slate-500 font-medium">Curriculum Progress</p>
+            <p className="text-xs text-muted-foreground font-medium">Curriculum Progress</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
             <TrendingUp className="w-5 h-5" />
           </div>
         </div>
 
-        {/* Card 3: Quiz Pass Rate */}
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="studio-card p-5 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-2xl font-extrabold text-rose-600">
-              {overview?.quiz_pass_rate ? `${overview.quiz_pass_rate.toFixed(1)}%` : "80.0%"}
+            <span className="font-display text-2xl font-bold text-orange-600 dark:text-orange-400 block">
+              {`${(overview?.quiz_pass_rate ?? 0).toFixed(1)}%`}
             </span>
-            <p className="text-xs text-slate-500 font-medium">Quiz Pass Rate</p>
+            <p className="text-xs text-muted-foreground font-medium">Quiz Pass Rate</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center">
             <Award className="w-5 h-5" />
           </div>
         </div>
 
-        {/* Card 4: Average Quiz Score */}
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div className="studio-card p-5 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-2xl font-extrabold text-purple-600">
-              {overview?.average_quiz_score ? `${overview.average_quiz_score.toFixed(1)}%` : "84.0%"}
+            <span className="font-display text-2xl font-bold text-blue-600 dark:text-blue-400 block">
+              {`${(overview?.average_quiz_score ?? 0).toFixed(1)}%`}
             </span>
-            <p className="text-xs text-slate-500 font-medium">Average Quiz Score</p>
+            <p className="text-xs text-muted-foreground font-medium">Average Quiz Score</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
             <Sparkles className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      {/* RESUME LEARNING ACTION CARD (If active courses to resume exist) */}
+      {/* RESUME LEARNING ACTION CARD */}
       {activeResumeCourse && (
-        <Card className="border-border/80 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-background">
+        <Card className="border-teal-500/30 bg-teal-500/5">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <PlayCircle className="h-5 w-5 text-primary" />
+            <CardTitle className="font-display text-base font-bold flex items-center gap-2">
+              <PlayCircle className="h-5 w-5 text-teal-600" />
               Resume Learning
             </CardTitle>
             <CardDescription className="text-xs">
-              Pick up where you left off in your enrolled courses
+              Pick up where you left off in your enrolled curriculum
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-border shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-card border border-border shadow-xs">
               <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600 block">
+                <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-orange-600 dark:text-orange-400 block">
                   Next up in enrolled curriculum
                 </span>
-                <h4 className="text-sm sm:text-base font-bold text-slate-900">
+                <h4 className="font-display text-sm sm:text-base font-bold text-foreground">
                   {activeResumeCourse.course_title}
                 </h4>
-                <p className="text-xs text-slate-500">
-                  Next: {activeResumeCourse.next_lesson_title} • {activeResumeCourse.completed_lessons} of {activeResumeCourse.total_lessons} lessons completed
+                <p className="text-xs text-muted-foreground">
+                  Next: {activeResumeCourse.next_lesson_title} · {activeResumeCourse.completed_lessons} of{" "}
+                  {activeResumeCourse.total_lessons} lessons completed
                 </p>
               </div>
               <Link to={`/learning/courses/${activeResumeCourse.course_id}`}>
                 <Button
                   size="sm"
-                  className="gap-2 bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold"
+                  className="gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-[0_2px_0_0_#0f766e]"
                 >
                   <Play className="h-3.5 w-3.5 fill-current" />
                   <span>Continue Course</span>
@@ -351,165 +437,128 @@ export const StudentAnalyticsDashboard: React.FC = () => {
         </Card>
       )}
 
-      {/* AI & ML INTELLIGENCE HUB (Copilot + RAG + Recommendation Engine) */}
-      <div className="space-y-5 pt-2">
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-md text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-md bg-indigo-500/20 text-cyan-300">
+      {/* AI & ML INTELLIGENCE HUB */}
+      <div className="space-y-5 pt-1">
+        <div className="p-5 sm:p-6 rounded-2xl bg-foreground text-background border border-border shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-teal-500/20 text-teal-300">
                 <Sparkles className="w-4 h-4" />
               </span>
-              <span className="text-[11px] uppercase font-bold tracking-wider text-cyan-300">
+              <span className="text-[11px] font-mono uppercase font-bold tracking-wider text-teal-300">
                 AI &amp; Machine Learning Intelligence Hub
               </span>
-              <span className="text-[10px] font-mono font-bold bg-white/10 px-2 py-0.5 rounded-full text-slate-300 border border-white/15">
-                FAISS Vector Store • 1,240 Chunks Indexed
+              <span className="text-[10px] font-mono font-bold bg-background/10 px-2.5 py-0.5 rounded-full border border-background/20">
+                FAISS Vector Store · 1,240 Chunks Indexed
               </span>
             </div>
-            <h3 className="text-base sm:text-lg font-extrabold text-white">
+            <h3 className="font-display text-lg font-bold">
               AI Study Copilot &amp; Personalized Learning Paths
             </h3>
-            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Query indexed course slide decks with LangChain RAG &amp; source citations, backed by gradient-boosted ML models predicting your optimal curriculum next steps and skill gap remediation.
+            <p className="text-xs opacity-80 max-w-2xl leading-relaxed">
+              Query indexed course slide decks with LangChain RAG &amp; source citations, backed by
+              ML mastery models recommending your next skill milestone.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent("open-ai-copilot"))}
-              className="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer hover:scale-105 active:scale-95"
-            >
-              <Bot className="w-4 h-4 text-cyan-300" />
-              <span>Launch AI Copilot</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-ai-copilot"))}
+            className="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0 kinetic-press"
+          >
+            <Bot className="w-4 h-4" />
+            <span>Launch AI Copilot</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        {/* 2-Column ML Cards: Next Learning Step & Learning Insights */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <LearningPathCard />
           <LearningInsightsCard />
         </div>
 
-        {/* ML Personalized Course Recommendations */}
         <CourseRecommendationsCard limit={3} />
       </div>
 
-      {/* ROW 3: COMPREHENSIVE SAMPLE COURSES (Modules, Video, PPT, Self-Assessments, Quizzes) */}
-      <div className="space-y-4 pt-2">
-        <div className="flex items-center justify-between">
+      {/* CURRICULA SHOWCASE MATRIX WITH INTERACTIVE FILTER */}
+      <div className="space-y-4 pt-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-base font-bold text-slate-900 tracking-tight">
-              Featured Sample Courses &amp; Curricula
+            <h3 className="font-display text-lg font-bold text-foreground">
+              Interactive Curricula Tracks
             </h3>
-            <p className="text-xs text-slate-500">Each course includes modular learning, lecture videos, PPT presentation slides, and self-assessments.</p>
+            <p className="text-xs text-muted-foreground">
+              Every track includes slide decks, lecture videos, flashcards, and graded assessments.
+            </p>
           </div>
-          <Link
-            to="/my-courses"
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
-          >
-            Explore all courses →
-          </Link>
+
+          <div className="flex items-center gap-2">
+            {(["all", "intermediate", "advanced"] as const).map((lvl) => (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => setCurriculumFilter(lvl)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold capitalize transition-colors cursor-pointer ${
+                  curriculumFilter === lvl
+                    ? "bg-foreground text-background"
+                    : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {lvl === "all" ? "All Levels" : lvl}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              id: "c-devops-01",
-              title: "Full-Stack Cloud & DevOps Engineering",
-              category: "Cloud & DevOps",
-              gradient: "from-blue-600 to-cyan-600",
-              modules: 3,
-              duration: "320 mins",
-              hasPpt: true,
-              hasSelfAssessment: true,
-              hasQuiz: true,
-            },
-            {
-              id: "c-ai-01",
-              title: "Enterprise AI Engineering & Large Language Models",
-              category: "AI & Data Science",
-              gradient: "from-indigo-600 to-violet-600",
-              modules: 3,
-              duration: "420 mins",
-              hasPpt: true,
-              hasSelfAssessment: true,
-              hasQuiz: true,
-            },
-            {
-              id: "c-python-01",
-              title: "Advanced Python & Distributed Data Systems",
-              category: "Software Engineering",
-              gradient: "from-emerald-600 to-teal-600",
-              modules: 3,
-              duration: "360 mins",
-              hasPpt: true,
-              hasSelfAssessment: true,
-              hasQuiz: true,
-            },
-            {
-              id: "c-security-01",
-              title: "Enterprise Cybersecurity & Zero Trust Systems",
-              category: "Cybersecurity",
-              gradient: "from-slate-800 to-slate-950",
-              modules: 3,
-              duration: "380 mins",
-              hasPpt: true,
-              hasSelfAssessment: true,
-              hasQuiz: true,
-            },
-          ].map((course) => (
-            <div
-              key={course.id}
-              onClick={() => navigate(`/courses/${course.id}`)}
-              className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
-            >
-              <div>
-                <div className={`h-20 bg-gradient-to-r ${course.gradient} p-3.5 text-white flex flex-col justify-between`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded-full">
-                      {course.category}
+          {filteredCurricula.map((course, idx) => {
+            const accents = [
+              "border-t-4 border-t-teal-600",
+              "border-t-4 border-t-orange-500",
+              "border-t-4 border-t-blue-600",
+              "border-t-4 border-t-emerald-600",
+            ];
+            return (
+              <div
+                key={course.id}
+                onClick={() => navigate(`/courses/${course.id}`)}
+                className={`studio-card ${accents[idx % accents.length]} p-5 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group`}
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
+                    <span className="px-2 py-0.5 rounded bg-secondary text-foreground font-semibold">
+                      {course.category?.name}
                     </span>
-                    <span className="text-[10px] text-white/80 font-mono font-medium">{course.duration}</span>
+                    <span className="text-muted-foreground">{course.duration_minutes}m</span>
                   </div>
-                  <span className="text-xs font-semibold text-white/90">{course.modules} Comprehensive Sections</span>
-                </div>
-
-                <div className="p-4 space-y-3">
-                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
+                  <h4 className="font-display text-sm font-bold text-foreground group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors line-clamp-2">
                     {course.title}
                   </h4>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {course.short_description}
+                  </p>
+                </div>
 
-                  <div className="flex flex-wrap gap-1 text-[9px] font-semibold">
-                    <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">PPT Included</span>
-                    <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">Self-Assessment</span>
-                    <span className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded">Graded Quiz</span>
-                  </div>
+                <div className="pt-4 mt-4 border-t border-border flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Layers className="w-3.5 h-3.5 text-teal-600" />
+                    {course.modules_count} Modules
+                  </span>
+                  <span className="font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1">
+                    Open <ArrowRight className="w-3 h-3" />
+                  </span>
                 </div>
               </div>
-
-              <div className="p-4 pt-0">
-                <button
-                  type="button"
-                  className="w-full py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <span>Start Course</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* ROW 4: RECENT ACTIVITY & QUIZ RESULTS (Test & Diagnostic Completeness) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
-        {/* Recent Activity Stream */}
-        <Card className="border-border/80">
+      {/* ROW 4: RECENT ACTIVITY & QUIZ RESULTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-1">
+        <Card className="studio-card border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-500" />
+            <CardTitle className="font-display text-base font-bold flex items-center gap-2">
+              <Clock className="h-4 w-4 text-teal-600" />
               Recent Activity Stream
             </CardTitle>
             <CardDescription className="text-xs">
@@ -523,28 +572,26 @@ export const StudentAnalyticsDashboard: React.FC = () => {
                 <div className="h-10 bg-muted/60 animate-pulse rounded-md" />
               </div>
             ) : !activityData?.recent_activities || activityData.recent_activities.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-xs border border-dashed border-border rounded-lg">
+              <div className="text-center py-8 text-muted-foreground text-xs border border-dashed border-border rounded-xl">
                 No recent activity recorded yet. Start a lesson to build your momentum!
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {activityData.recent_activities.slice(0, 5).map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-start justify-between gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs"
+                    className="flex items-start justify-between gap-3 p-3 rounded-xl bg-secondary/40 border border-border text-xs"
                   >
                     <div className="space-y-0.5">
                       <p className="font-semibold text-foreground">{item.title}</p>
                       <p className="text-muted-foreground">{item.subtitle}</p>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-[11px] text-muted-foreground">
-                        {new Date(item.timestamp).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                    </div>
+                    <span className="text-[11px] font-mono text-muted-foreground shrink-0">
+                      {new Date(item.timestamp).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -552,11 +599,10 @@ export const StudentAnalyticsDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Recent Quiz Assessment Results */}
-        <Card className="border-border/80">
+        <Card className="studio-card border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-purple-500" />
+            <CardTitle className="font-display text-base font-bold flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-orange-500" />
               Recent Quiz Results
             </CardTitle>
             <CardDescription className="text-xs">
@@ -570,30 +616,26 @@ export const StudentAnalyticsDashboard: React.FC = () => {
                 <div className="h-10 bg-muted/60 animate-pulse rounded-md" />
               </div>
             ) : !assessmentsData?.results || assessmentsData.results.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-xs border border-dashed border-border rounded-lg">
+              <div className="text-center py-8 text-muted-foreground text-xs border border-dashed border-border rounded-xl">
                 No finalized quiz attempts recorded yet. Take a quiz to test your knowledge!
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {assessmentsData.results.slice(0, 5).map((res) => (
                   <div
                     key={res.attempt_id}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border border-border/50 text-xs"
+                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border text-xs"
                   >
-                    <div className="space-y-0.5">
-                      <p className="font-semibold text-foreground truncate max-w-[200px] sm:max-w-xs">
-                        {res.quiz_title}
-                      </p>
-                      <p className="text-muted-foreground text-[11px] truncate max-w-[200px] sm:max-w-xs">
-                        {res.course_title} • Attempt #{res.attempt_number}
+                    <div className="space-y-0.5 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{res.quiz_title}</p>
+                      <p className="text-muted-foreground text-[11px] truncate">
+                        {res.course_title} · Attempt #{res.attempt_number}
                       </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <span className="font-bold text-foreground">
-                          {res.percentage_score.toFixed(1)}%
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <span className="font-mono font-bold text-foreground">
+                        {res.percentage_score.toFixed(1)}%
+                      </span>
                       <Badge
                         variant={res.passed ? "success" : "destructive"}
                         className="text-[10px]"
@@ -602,7 +644,7 @@ export const StudentAnalyticsDashboard: React.FC = () => {
                       </Badge>
                       <Link
                         to={`/learning/quizzes/${res.quiz_id}/results/${res.attempt_id}`}
-                        className="text-primary hover:underline font-medium text-xs ml-1"
+                        className="text-teal-700 dark:text-teal-400 hover:underline font-bold text-xs"
                         aria-label={`View attempt results for ${res.quiz_title}`}
                       >
                         View

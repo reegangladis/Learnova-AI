@@ -1,20 +1,47 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  BookOpen,
-  Star,
-  Search,
-  ArrowRight,
   AlertCircle,
+  ArrowRight,
+  BookOpen,
+  LayoutGrid,
+  List,
+  Search,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { learningService } from "@/services/learningService";
 
+const STARRED_STORAGE_KEY = "learnova_starred_courses_v1";
+
 export function MyLearningPage() {
-  const [activeTab, setActiveTab] = useState<"all" | "in_progress" | "future" | "past" | "starred">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "in_progress" | "past" | "starred">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [starredIds, setStarredIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(STARRED_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STARRED_STORAGE_KEY, JSON.stringify(starredIds));
+    } catch {
+      // Ignore storage error
+    }
+  }, [starredIds]);
+
+  const toggleStar = (courseId: string) => {
+    setStarredIds((prev) =>
+      prev.includes(courseId) ? prev.filter((id) => id !== courseId) : [...prev, courseId]
+    );
+  };
 
   const {
     data: enrollmentsData,
@@ -29,7 +56,19 @@ export function MyLearningPage() {
 
   const enrollments = enrollmentsData?.items || [];
 
-  // Filter enrollments based on active tab and search
+  // Derived real metrics (replacing static mock counters)
+  const totalEnrolled = enrollments.length;
+  const completedCount = enrollments.filter(
+    (e) => e.status === "completed" || (e.progress_percentage || 0) >= 100
+  ).length;
+  const inProgressCount = Math.max(0, totalEnrolled - completedCount);
+  const avgProgress =
+    totalEnrolled > 0
+      ? Math.round(
+          enrollments.reduce((acc, e) => acc + (e.progress_percentage || 0), 0) / totalEnrolled
+        )
+      : 0;
+
   const filteredEnrollments = enrollments.filter((e) => {
     const matchesSearch =
       searchQuery.trim() === "" ||
@@ -44,11 +83,14 @@ export function MyLearningPage() {
     if (activeTab === "past") {
       return e.status === "completed" || (e.progress_percentage || 0) >= 100;
     }
+    if (activeTab === "starred") {
+      return starredIds.includes(e.course_id);
+    }
     return true;
   });
 
-  // Highlight first in-progress course for "Continue Learning" banner (Screenshot 5)
-  const continueCourse = enrollments.find((e) => (e.progress_percentage || 0) < 100) || enrollments[0];
+  const continueCourse =
+    enrollments.find((e) => (e.progress_percentage || 0) < 100) || enrollments[0];
 
   const getMonogram = (title: string) => {
     const words = title.split(" ").filter(Boolean);
@@ -58,89 +100,92 @@ export function MyLearningPage() {
     return title.slice(0, 2).toUpperCase();
   };
 
-  const getCardColor = (idx: number) => {
-    const colors = [
-      "from-blue-600 to-indigo-700",
-      "from-sky-500 to-blue-600",
-      "from-teal-600 to-cyan-700",
-      "from-purple-600 to-indigo-800",
-      "from-indigo-600 to-blue-800",
-      "from-slate-700 to-slate-900",
+  const getAccentBorder = (idx: number) => {
+    const borders = [
+      "border-l-4 border-l-teal-600",
+      "border-l-4 border-l-orange-500",
+      "border-l-4 border-l-blue-600",
+      "border-l-4 border-l-emerald-600",
     ];
-    return colors[idx % colors.length];
+    return borders[idx % borders.length];
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* TOP HERO BANNER: Deep Petrol Blue with Stat Counters (Screenshot 5) */}
-      <div className="bg-gradient-to-r from-[#0C3E56] via-[#093043] to-[#072433] rounded-2xl p-6 sm:p-8 text-white shadow-md border border-[#144E6D]/40">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-sm">
-              My Learning
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              My courses
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300">
-              Pick up where you left off and keep making progress.
-            </p>
-          </div>
+      {/* Studio My Learning Header Deck */}
+      <div className="studio-card p-6 sm:p-7 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1.5">
+          <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300 bg-teal-500/10 border border-teal-500/20 px-2.5 py-0.5 rounded-full">
+            My Learning
+          </span>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            My courses
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Resume modules, star priority tracks, and monitor lesson completion across curricula.
+          </p>
+        </div>
 
-          {/* Quick Stat Counters (Screenshot 5: 24 Enrolled, 11 This Semester, 5 In Progress, 2 Completed) */}
-          <div className="flex items-center gap-3 sm:gap-6 bg-[#051C28]/80 p-3 sm:p-4 rounded-xl border border-[#16506D]/60 shrink-0">
-            <div className="text-center px-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-white block leading-none">
-                {enrollments.length > 0 ? enrollments.length : 24}
-              </span>
-              <span className="text-[9px] uppercase font-bold text-slate-400 mt-1 block">ENROLLED</span>
-            </div>
-            <div className="h-8 w-px bg-slate-700" />
-            <div className="text-center px-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-sky-400 block leading-none">11</span>
-              <span className="text-[9px] uppercase font-bold text-slate-400 mt-1 block">THIS SEMESTER</span>
-            </div>
-            <div className="h-8 w-px bg-slate-700" />
-            <div className="text-center px-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-amber-400 block leading-none">5</span>
-              <span className="text-[9px] uppercase font-bold text-slate-400 mt-1 block">IN PROGRESS</span>
-            </div>
-            <div className="h-8 w-px bg-slate-700" />
-            <div className="text-center px-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-emerald-400 block leading-none">2</span>
-              <span className="text-[9px] uppercase font-bold text-slate-400 mt-1 block">COMPLETED</span>
-            </div>
+        {/* Dynamic Live Counters */}
+        <div className="grid grid-cols-4 gap-3 sm:gap-5 bg-secondary/50 p-3.5 sm:px-5 rounded-2xl border border-border shrink-0">
+          <div className="text-center">
+            <span className="font-display text-xl sm:text-2xl font-bold text-foreground block leading-none">
+              {totalEnrolled}
+            </span>
+            <span className="text-[9px] font-mono uppercase text-muted-foreground mt-1 block">
+              ENROLLED
+            </span>
+          </div>
+          <div className="text-center border-l border-border pl-3 sm:pl-5">
+            <span className="font-display text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400 block leading-none">
+              {inProgressCount}
+            </span>
+            <span className="text-[9px] font-mono uppercase text-muted-foreground mt-1 block">
+              ACTIVE
+            </span>
+          </div>
+          <div className="text-center border-l border-border pl-3 sm:pl-5">
+            <span className="font-display text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 block leading-none">
+              {completedCount}
+            </span>
+            <span className="text-[9px] font-mono uppercase text-muted-foreground mt-1 block">
+              DONE
+            </span>
+          </div>
+          <div className="text-center border-l border-border pl-3 sm:pl-5">
+            <span className="font-display text-xl sm:text-2xl font-bold text-teal-700 dark:text-teal-400 block leading-none">
+              avg {avgProgress}%
+            </span>
+            <span className="text-[9px] font-mono uppercase text-muted-foreground mt-1 block">
+              AVG RATE
+            </span>
           </div>
         </div>
       </div>
 
-      {/* HIGHLIGHT CARD: CONTINUE LEARNING (Screenshot 5) */}
+      {/* CONTINUE LEARNING SPOTLIGHT */}
       {continueCourse && (
-        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="studio-card p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-teal-500/30 bg-teal-500/5">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-extrabold text-xl flex items-center justify-center shadow-md shrink-0">
-              {getMonogram(continueCourse.course?.title || "IB")}
+            <div className="w-14 h-14 rounded-2xl bg-teal-600 text-white font-display font-bold text-lg flex items-center justify-center shadow-[0_3px_0_0_#0f766e] shrink-0">
+              {getMonogram(continueCourse.course?.title || "LN")}
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600 block">
+              <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-orange-600 dark:text-orange-400 block">
                 CONTINUE LEARNING
               </span>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+              <h3 className="font-display text-base sm:text-lg font-bold text-foreground leading-snug">
                 Current Focus: {continueCourse.course?.title}
               </h3>
-              <p className="text-xs text-slate-500">
-                DSM July, 2026 · Instructor
-              </p>
-              {/* Progress bar */}
               <div className="flex items-center gap-3 pt-1">
-                <div className="w-48 sm:w-64 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-44 sm:w-64 h-2 bg-secondary rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-amber-500 rounded-full transition-all"
-                    style={{ width: `${continueCourse.progress_percentage || 50}%` }}
+                    className="h-full bg-teal-600 rounded-full transition-all"
+                    style={{ width: `${continueCourse.progress_percentage || 0}%` }}
                   />
                 </div>
-                <span className="text-xs font-bold text-slate-700">
-                  {continueCourse.progress_percentage || 50}% Completed
+                <span className="text-xs font-mono font-bold text-foreground">
+                  {Math.round(continueCourse.progress_percentage || 0)}% Completed
                 </span>
               </div>
             </div>
@@ -149,7 +194,7 @@ export function MyLearningPage() {
           <Link to={`/learning/courses/${continueCourse.course_id}`}>
             <button
               type="button"
-              className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold px-6 py-2.5 rounded-lg text-xs sm:text-sm shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm shadow-[0_3px_0_0_#0f766e] flex items-center gap-2 transition-all cursor-pointer"
             >
               <span>Resume Learning</span>
               <ArrowRight className="w-4 h-4" />
@@ -158,57 +203,78 @@ export function MyLearningPage() {
         </div>
       )}
 
-      {/* FILTER & SEARCH TOOLBAR (Screenshot 5) */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-        {/* Course count and search */}
+      {/* FILTER, SEARCH & VIEW TOOLBAR */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 max-w-md">
-          <span className="text-xs font-bold text-slate-700 whitespace-nowrap">
-            {filteredEnrollments.length} My Courses
+          <span className="text-xs font-bold text-foreground whitespace-nowrap">
+            {filteredEnrollments.length} {filteredEnrollments.length === 1 ? "Course" : "Courses"}
           </span>
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search my courses..."
-              className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0B374D]"
+              className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded-xl text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-teal-500/40"
             />
           </div>
         </div>
 
-        {/* Filter Pills (All, In progress, Future, Past, Starred) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {(["all", "in_progress", "future", "past", "starred"] as const).map((tab) => (
+        <div className="flex items-center justify-between sm:justify-end gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {(["all", "in_progress", "past", "starred"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  activeTab === tab
+                    ? "bg-foreground text-background"
+                    : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab === "all"
+                  ? "All"
+                  : tab === "in_progress"
+                  ? "In progress"
+                  : tab === "past"
+                  ? "Completed"
+                  : `★ Starred (${starredIds.length})`}
+              </button>
+            ))}
+          </div>
+
+          <div className="hidden sm:flex items-center p-1 bg-card border border-border rounded-xl">
             <button
-              key={tab}
               type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                activeTab === tab
-                  ? "bg-[#0B374D] text-white"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+              onClick={() => setViewMode("grid")}
+              aria-label="Grid View"
+              className={`p-1.5 rounded-lg cursor-pointer ${
+                viewMode === "grid" ? "bg-secondary text-foreground" : "text-muted-foreground"
               }`}
             >
-              {tab === "all"
-                ? "All"
-                : tab === "in_progress"
-                ? "In progress"
-                : tab === "future"
-                ? "Future"
-                : tab === "past"
-                ? "Past"
-                : "★ Starred"}
+              <LayoutGrid className="w-3.5 h-3.5" />
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              aria-label="List View"
+              className={`p-1.5 rounded-lg cursor-pointer ${
+                viewMode === "list" ? "bg-secondary text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ERROR STATE */}
       {isError && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>Failed to load your enrolled courses: {(error as Error)?.message || "Network error"}</span>
           </div>
           <Button size="sm" variant="outline" onClick={() => refetch()} className="text-xs h-7">
@@ -219,11 +285,11 @@ export function MyLearningPage() {
 
       {/* LOADING STATE */}
       {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-              <Skeleton className="h-24 w-full rounded-lg" />
-              <Skeleton className="h-4 w-3/4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="studio-card p-5 space-y-3">
+              <Skeleton className="h-6 w-24 rounded-md" />
+              <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-3 w-1/2" />
             </div>
           ))}
@@ -232,127 +298,130 @@ export function MyLearningPage() {
 
       {/* EMPTY STATE */}
       {!isLoading && filteredEnrollments.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4">
-          <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+        <div className="studio-card p-12 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-secondary text-teal-600 flex items-center justify-center mx-auto">
             <BookOpen className="w-7 h-7" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900">No Enrolled Courses Yet</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              You haven&apos;t enrolled in any learning tracks yet. Explore our course catalog to start learning.
+            <h3 className="font-display text-base font-bold text-foreground">
+              {activeTab === "starred" ? "No Starred Courses" : "No Enrolled Courses Yet"}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+              {activeTab === "starred"
+                ? "Click the star icon on any course card to pin it here for instant access."
+                : "You haven't enrolled in any learning tracks yet. Explore our course catalog to start learning."}
             </p>
           </div>
-          <Link to="/courses">
-            <Button className="bg-[#E59819] hover:bg-[#D48810] text-slate-950 font-bold text-xs gap-1.5">
-              <span>Explore Catalog</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
-          </Link>
+          {activeTab !== "starred" && (
+            <Link to="/courses">
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs gap-1.5">
+                <span>Explore Catalog</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          )}
         </div>
       )}
 
-      {/* GROUPED ACCORDION: Semester - 01 (Screenshot 5) */}
+      {/* ENROLLED COURSES */}
       {!isLoading && filteredEnrollments.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Semester - 01
-              </span>
-              <span className="text-[11px] text-slate-400 font-medium">avg 41%</span>
-            </div>
-            <span className="text-xs text-slate-500 font-medium">
-              {filteredEnrollments.length} {filteredEnrollments.length === 1 ? "course" : "courses"}
-            </span>
-          </div>
+        <div
+          className={
+            viewMode === "grid"
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              : "flex flex-col gap-3"
+          }
+        >
+          {filteredEnrollments.map((enr, idx) => {
+            const progress = enr.progress_percentage || 0;
+            const isDone = progress >= 100;
+            const completedLessons = enr.completed_lessons_count || 0;
+            const totalLessons = enr.total_lessons_count || enr.course?.lessons_count || 1;
+            const isStarred = starredIds.includes(enr.course_id);
 
-          {/* COURSE CARDS GRID (Screenshot 2 & 5) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {filteredEnrollments.map((enr, idx) => {
-              const progress = enr.progress_percentage || 0;
-              const isDone = progress >= 100;
-              const completedLessons = enr.completed_lessons_count || 0;
-              const totalLessons = enr.total_lessons_count || enr.course?.lessons_count || 1;
-
-              return (
-                <div
-                  key={enr.id}
-                  className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
-                >
-                  {/* Top Header Banner */}
-                  <div className={`h-24 bg-gradient-to-r ${getCardColor(idx)} p-3.5 text-white flex items-start justify-between relative`}>
+            return (
+              <div
+                key={enr.id}
+                className={`studio-card ${getAccentBorder(idx)} p-5 hover:shadow-md transition-all flex ${
+                  viewMode === "grid"
+                    ? "flex-col justify-between gap-4"
+                    : "flex-col sm:flex-row sm:items-center justify-between gap-4"
+                }`}
+              >
+                <div className="space-y-2.5 flex-1">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-xs flex items-center justify-center font-extrabold text-sm shadow-xs">
+                      <span className="w-8 h-8 rounded-lg bg-secondary text-foreground font-mono font-bold text-xs flex items-center justify-center">
                         {getMonogram(enr.course?.title || "CO")}
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded-full">
+                      </span>
+                      <span className="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded bg-secondary text-muted-foreground">
                         {enr.course?.difficulty || "Comprehensive"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <button type="button" title="Star course" className="text-white/80 hover:text-amber-300 transition-colors">
-                        <Star className="w-4 h-4" />
-                      </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleStar(enr.course_id)}
+                      title={isStarred ? "Unstar course" : "Star course"}
+                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                        isStarred
+                          ? "text-orange-500 bg-orange-500/10"
+                          : "text-muted-foreground hover:text-orange-500 hover:bg-secondary"
+                      }`}
+                    >
+                      <Star className={`w-4 h-4 ${isStarred ? "fill-current" : ""}`} />
+                    </button>
+                  </div>
+
+                  <Link to={`/courses/${enr.course_id}`}>
+                    <h4 className="font-display text-base font-bold text-foreground hover:text-teal-700 dark:hover:text-teal-400 transition-colors leading-snug">
+                      {enr.course?.title}
+                    </h4>
+                  </Link>
+                  {enr.course?.short_description && viewMode === "grid" && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {enr.course.short_description}
+                    </p>
+                  )}
+                </div>
+
+                <div className={viewMode === "list" ? "w-full sm:w-64 space-y-2" : "space-y-3"}>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[11px] font-mono text-muted-foreground">
+                        {completedLessons} of {totalLessons} lessons
+                      </span>
+                      <span className="font-mono font-bold text-foreground">
+                        {progress.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          isDone ? "bg-emerald-500" : "bg-teal-600"
+                        }`}
+                        style={{ width: `${progress}%` }}
+                      />
                     </div>
                   </div>
 
-                  {/* Body Content */}
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div className="space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-1.5 text-[9px] font-semibold text-slate-500">
-                        <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">PPT Included</span>
-                        <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">Quizzes</span>
-                        <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">Self-Assessment</span>
-                      </div>
-
-                      <Link to={`/courses/${enr.course_id}`}>
-                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
-                          {enr.course?.title}
-                        </h4>
-                      </Link>
-                    </div>
-
-                    {/* Progress Bar & Percentage */}
-                    <div className="space-y-1.5 pt-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[11px] text-slate-500">
-                          {completedLessons} of {totalLessons} lessons
-                        </span>
-                        <span className="font-bold text-slate-800">
-                          {progress.toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            isDone ? "bg-emerald-500" : "bg-indigo-600"
-                          }`}
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Footer Row & Action Button */}
-                    <div className="pt-2 flex items-center justify-between border-t border-slate-100">
-                      <span className="text-[10px] text-slate-400">
-                        {isDone ? "Completed" : "In progress"}
-                      </span>
-
-                      <Link to={`/courses/${enr.course_id}`}>
-                        <button
-                          type="button"
-                          className="bg-[#063B50] hover:bg-[#052E40] text-white font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-xs transition-all cursor-pointer"
-                        >
-                          <span>{isDone ? "Review" : progress > 0 ? "Continue" : "Open Course"}</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
-                      </Link>
-                    </div>
+                  <div className="pt-2 flex items-center justify-between border-t border-border">
+                    <span className="text-[11px] font-mono text-muted-foreground">
+                      {isDone ? "Completed" : "In progress"}
+                    </span>
+                    <Link to={`/courses/${enr.course_id}`}>
+                      <button
+                        type="button"
+                        className="bg-foreground hover:bg-foreground/90 text-background font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <span>{isDone ? "Review" : progress > 0 ? "Continue" : "Open Course"}</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </Link>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

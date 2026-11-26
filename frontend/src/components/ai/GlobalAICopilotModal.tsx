@@ -146,30 +146,30 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/65 backdrop-blur-md animate-fade-in">
       {/* Modal Container */}
-      <div className="w-full max-w-5xl h-[90vh] max-h-[820px] bg-[#0B0F19] border border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100">
+      <div className="w-full max-w-5xl h-[90vh] max-h-[820px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden text-foreground">
         {/* Top Header */}
-        <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/60 flex items-center justify-between shrink-0">
+        <div className="px-5 py-4 border-b border-border bg-secondary/40 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-              <Sparkles className="w-5 h-5 text-cyan-300" />
+            <div className="w-9 h-9 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-[0_2px_0_0_#0f766e]">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base tracking-tight text-white">
+                <h3 className="font-display font-bold text-base tracking-tight text-foreground">
                   Learnova AI Study Copilot
                 </h3>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
-                  RAG • LangChain • FAISS
+                <span className="text-[10px] font-mono uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-500/12 text-teal-700 dark:text-teal-300 border border-teal-500/25">
+                  RAG · LangChain · FAISS
                 </span>
               </div>
-              <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>1,240 Document Chunks Indexed</span>
-                <span>•</span>
+                <span>·</span>
                 <span>Vector Dimension 1536</span>
-                <span>•</span>
+                <span>·</span>
                 <span>Sub-50ms Retrieval</span>
               </p>
             </div>
@@ -177,14 +177,14 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
 
           <div className="flex items-center gap-2">
             {/* Tab navigation pills */}
-            <div className="hidden sm:flex rounded-lg bg-slate-800/70 p-1 border border-slate-700/60 text-xs">
+            <div className="hidden sm:flex rounded-xl bg-secondary p-1 border border-border text-xs">
               <button
                 type="button"
                 onClick={() => setActiveTab("chat")}
-                className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                   activeTab === "chat"
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-teal-600 text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Copilot Chat
@@ -192,10 +192,10 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab("ml_path")}
-                className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                   activeTab === "ml_path"
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-teal-600 text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 ML Learning Path
@@ -203,10 +203,10 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab("vector_store")}
-                className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
                   activeTab === "vector_store"
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-teal-600 text-white shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 FAISS Vector Store
@@ -216,7 +216,7 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
               title="Close Copilot"
             >
               <X className="w-5 h-5" />
@@ -225,14 +225,14 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
         </div>
 
         {/* Tab switcher on mobile */}
-        <div className="sm:hidden flex border-b border-slate-800 bg-slate-900/40 text-xs">
+        <div className="sm:hidden flex border-b border-border bg-secondary/30 text-xs">
           <button
             type="button"
             onClick={() => setActiveTab("chat")}
             className={`flex-1 py-2 text-center font-bold border-b-2 ${
               activeTab === "chat"
-                ? "border-indigo-500 text-white"
-                : "border-transparent text-slate-400"
+                ? "border-teal-600 text-foreground"
+                : "border-transparent text-muted-foreground"
             }`}
           >
             Chat
@@ -242,8 +242,8 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
             onClick={() => setActiveTab("ml_path")}
             className={`flex-1 py-2 text-center font-bold border-b-2 ${
               activeTab === "ml_path"
-                ? "border-indigo-500 text-white"
-                : "border-transparent text-slate-400"
+                ? "border-teal-600 text-foreground"
+                : "border-transparent text-muted-foreground"
             }`}
           >
             ML Path
@@ -253,8 +253,8 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
             onClick={() => setActiveTab("vector_store")}
             className={`flex-1 py-2 text-center font-bold border-b-2 ${
               activeTab === "vector_store"
-                ? "border-indigo-500 text-white"
-                : "border-transparent text-slate-400"
+                ? "border-teal-600 text-foreground"
+                : "border-transparent text-muted-foreground"
             }`}
           >
             Vector Store
@@ -266,14 +266,14 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
           {activeTab === "chat" && (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Course Context Bar */}
-              <div className="px-5 py-2.5 bg-slate-900/40 border-b border-slate-800/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="px-5 py-2.5 bg-secondary/30 border-b border-border flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-                  <span className="text-slate-400">RAG Context Scope:</span>
+                  <BookOpen className="w-3.5 h-3.5 text-teal-600" />
+                  <span className="text-muted-foreground font-medium">RAG Context Scope:</span>
                   <select
                     value={selectedCourseId}
                     onChange={(e) => setSelectedCourseId(e.target.value)}
-                    className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                    className="bg-card border border-border rounded-lg px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-teal-500/40 font-semibold"
                   >
                     {COURSES_RAG.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -283,10 +283,10 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
                   </select>
                 </div>
 
-                <div className="hidden md:flex items-center gap-2 text-[11px] text-slate-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span>Embedding Model: text-embedding-3-small</span>
-                  <span>•</span>
+                <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>text-embedding-3-small</span>
+                  <span>·</span>
                   <span>Top-K: 4</span>
                 </div>
               </div>
@@ -303,19 +303,18 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
                     <div
                       className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed ${
                         msg.role === "user"
-                          ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/20"
-                          : "bg-slate-900/80 border border-slate-800 text-slate-200"
+                          ? "bg-teal-600 text-white shadow-sm"
+                          : "bg-secondary/50 border border-border text-foreground"
                       }`}
                     >
-                      {/* Assistant Header Tag */}
                       {msg.role === "assistant" && (
-                        <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400">
-                          <span className="flex items-center gap-1.5 font-bold text-indigo-400">
-                            <Bot className="w-3.5 h-3.5 text-cyan-400" />
+                        <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-border text-[10px] text-muted-foreground">
+                          <span className="flex items-center gap-1.5 font-bold text-teal-700 dark:text-teal-400">
+                            <Bot className="w-3.5 h-3.5" />
                             <span>Learnova AI Copilot</span>
                           </span>
                           {msg.grounded_in_sources && (
-                            <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
                               <CheckCircle2 className="w-3 h-3" />
                               <span>Grounded in Verified Slides</span>
                             </span>
@@ -323,41 +322,39 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
                         </div>
                       )}
 
-                      {/* Message Content */}
                       <div className="whitespace-pre-line space-y-2">{msg.content}</div>
 
-                      {/* Source Citations Accordion (RAG Feature) */}
                       {msg.citations && msg.citations.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-slate-800/80">
-                          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-300 mb-2">
-                            <FileText className="w-3.5 h-3.5 text-amber-400" />
+                        <div className="mt-3 pt-3 border-t border-border">
+                          <div className="flex items-center gap-1 text-[11px] font-bold text-foreground mb-2">
+                            <FileText className="w-3.5 h-3.5 text-orange-500" />
                             <span>Verified Source Citations ({msg.citations.length}):</span>
                           </div>
                           <div className="grid grid-cols-1 gap-2">
                             {msg.citations.map((cite, idx) => (
                               <div
                                 key={idx}
-                                className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-slate-300 space-y-1"
+                                className="p-2.5 rounded-xl bg-card border border-border text-[11px] text-foreground space-y-1"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="font-bold text-indigo-300 flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                  <span className="font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
                                     {cite.document_title || cite.lesson_title || "Course Slide Deck"}
                                   </span>
                                   {cite.similarity_score && (
-                                    <span className="text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded">
+                                    <span className="text-[10px] font-mono font-bold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20 px-1.5 py-0.5 rounded">
                                       {(cite.similarity_score * 100).toFixed(0)}% Match
                                     </span>
                                   )}
                                 </div>
                                 {cite.page_number && (
-                                  <p className="text-[10px] text-amber-400/90 font-semibold">
+                                  <p className="text-[10px] text-orange-600 dark:text-orange-400 font-mono font-semibold">
                                     Slide / Page #{cite.page_number}
                                   </p>
                                 )}
                                 {cite.snippet && (
-                                  <p className="text-slate-400 italic text-[10px] border-l-2 border-indigo-500/40 pl-2">
-                                    "{cite.snippet}"
+                                  <p className="text-muted-foreground italic text-[10px] border-l-2 border-teal-500/50 pl-2">
+                                    &ldquo;{cite.snippet}&rdquo;
                                   </p>
                                 )}
                               </div>
@@ -366,15 +363,14 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
                         </div>
                       )}
 
-                      {/* Follow-up suggestions */}
                       {msg.follow_up_suggestions && msg.follow_up_suggestions.length > 0 && (
-                        <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex flex-wrap gap-1.5">
+                        <div className="mt-3 pt-2.5 border-t border-border flex flex-wrap gap-1.5">
                           {msg.follow_up_suggestions.map((sug, sIdx) => (
                             <button
                               key={sIdx}
                               type="button"
                               onClick={() => handleSendMessage(sug)}
-                              className="text-[10px] font-medium bg-slate-800/80 hover:bg-indigo-600 hover:text-white text-slate-300 px-2.5 py-1 rounded-full border border-slate-700/60 transition-all text-left flex items-center gap-1"
+                              className="text-[10px] font-semibold bg-card hover:bg-teal-600 hover:text-white text-foreground px-2.5 py-1 rounded-full border border-border transition-all text-left flex items-center gap-1 cursor-pointer"
                             >
                               <span>{sug}</span>
                               <ChevronRight className="w-2.5 h-2.5 opacity-60" />
@@ -383,8 +379,7 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
                         </div>
                       )}
 
-                      {/* Message Timestamp */}
-                      <div className="text-[9px] text-slate-500 mt-2 text-right">
+                      <div className="text-[9px] text-muted-foreground mt-2 text-right font-mono">
                         {msg.timestamp}
                       </div>
                     </div>
@@ -392,23 +387,23 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
                 ))}
 
                 {isSubmitting && (
-                  <div className="flex items-start gap-2 max-w-[85%] rounded-2xl p-4 bg-slate-900/80 border border-slate-800 text-xs text-slate-300 animate-pulse">
-                    <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
-                    <span>Searching FAISS vector index & synthesizing grounded answer...</span>
+                  <div className="flex items-center gap-2 max-w-[85%] rounded-2xl p-4 bg-secondary/50 border border-border text-xs text-foreground animate-pulse">
+                    <Sparkles className="w-4 h-4 text-teal-600 animate-spin" />
+                    <span>Searching FAISS vector index &amp; synthesizing grounded answer...</span>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
 
               {/* Quick Prompts Bar */}
-              <div className="px-4 py-2 border-t border-slate-800/60 bg-slate-900/30 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                <span className="text-[10px] font-bold text-slate-400 shrink-0">Try asking:</span>
+              <div className="px-4 py-2 border-t border-border bg-secondary/20 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                <span className="text-[10px] font-bold text-muted-foreground shrink-0">Try asking:</span>
                 {QUICK_PROMPTS.map((prompt, pIdx) => (
                   <button
                     key={pIdx}
                     type="button"
                     onClick={() => handleSendMessage(prompt)}
-                    className="shrink-0 text-[10px] text-slate-300 bg-slate-800/80 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700/60 transition-colors"
+                    className="shrink-0 text-[10px] text-foreground bg-card hover:bg-secondary px-2.5 py-1 rounded-lg border border-border transition-colors cursor-pointer"
                   >
                     {prompt}
                   </button>
@@ -416,7 +411,7 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
               </div>
 
               {/* Chat Input Box */}
-              <div className="p-4 border-t border-slate-800 bg-slate-900/60">
+              <div className="p-4 border-t border-border bg-secondary/30">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -430,12 +425,12 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder="Ask anything about course slides, containers, attention mechanics, or zero trust..."
                     disabled={isSubmitting}
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all disabled:opacity-50"
+                    className="flex-1 bg-card border border-input rounded-xl px-4 py-2.5 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-600 transition-all disabled:opacity-50"
                   />
                   <button
                     type="submit"
                     disabled={!inputMessage.trim() || isSubmitting}
-                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition-all"
+                    className="bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
                   >
                     <span>Send</span>
                     <Send className="w-3.5 h-3.5" />
@@ -447,22 +442,21 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
 
           {activeTab === "ml_path" && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div>
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Compass className="w-4 h-4 text-primary" />
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-teal-600" />
                     <span>Machine Learning Recommendation &amp; Learning Path Engine</span>
                   </h4>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     Personalized sequencing, prerequisite graph traversal, and dropout risk mitigation.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                   Model: XGBoost / GradientBoost v2.4
                 </span>
               </div>
 
-              {/* ML Cards Container */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <LearningPathCard />
                 <LearningInsightsCard />
@@ -476,13 +470,13 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
 
           {activeTab === "vector_store" && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div>
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Database className="w-4 h-4 text-cyan-400" />
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Database className="w-4 h-4 text-teal-600" />
                     <span>FAISS Vector Retrieval Store Telemetry</span>
                   </h4>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     Hierarchical indexing of course slides, markdown lessons, and presentation decks.
                   </p>
                 </div>
@@ -490,7 +484,7 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
                   type="button"
                   onClick={handleTriggerReindex}
                   disabled={isIngesting}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
+                  className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isIngesting ? "animate-spin" : ""}`} />
                   <span>{isIngesting ? "Indexing Chunks..." : "Re-Index Curricula"}</span>
@@ -498,54 +492,52 @@ export const GlobalAICopilotModal: React.FC<GlobalAICopilotModalProps> = ({
               </div>
 
               {ingestionComplete && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>All 1,240 document chunks successfully indexed into FAISS FlatIP vector space!</span>
                 </div>
               )}
 
-              {/* Telemetry Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Total Chunks</span>
-                  <p className="text-2xl font-extrabold text-white">1,240</p>
-                  <p className="text-[11px] text-slate-500">Across 4 enterprise curricula</p>
+                <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Total Chunks</span>
+                  <p className="font-display text-2xl font-bold text-foreground">1,240</p>
+                  <p className="text-[11px] text-muted-foreground">Across 4 enterprise curricula</p>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Index Type</span>
-                  <p className="text-xl font-extrabold text-cyan-400">FAISS FlatIP</p>
-                  <p className="text-[11px] text-slate-500">Exact inner product cosine ranking</p>
+                <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Index Type</span>
+                  <p className="font-display text-xl font-bold text-teal-700 dark:text-teal-400">FAISS FlatIP</p>
+                  <p className="text-[11px] text-muted-foreground">Exact inner product ranking</p>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Embedding Model</span>
-                  <p className="text-base font-extrabold text-indigo-400">all-MiniLM-L6-v2</p>
-                  <p className="text-[11px] text-slate-500">Dense 1536/384-dimensional space</p>
+                <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Embedding Model</span>
+                  <p className="font-mono text-base font-bold text-orange-600 dark:text-orange-400">all-MiniLM-L6-v2</p>
+                  <p className="text-[11px] text-muted-foreground">Dense 384/1536-dim space</p>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400">Average Latency</span>
-                  <p className="text-2xl font-extrabold text-emerald-400">42 ms</p>
-                  <p className="text-[11px] text-slate-500">Sub-second query retrieval</p>
+                <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Average Latency</span>
+                  <p className="font-display text-2xl font-bold text-emerald-600 dark:text-emerald-400">42 ms</p>
+                  <p className="text-[11px] text-muted-foreground">Sub-second query retrieval</p>
                 </div>
               </div>
 
-              {/* Chunk Distribution Breakdown */}
-              <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
-                <h5 className="text-xs font-bold text-white uppercase tracking-wider">
+              <div className="p-5 rounded-xl bg-secondary/40 border border-border space-y-3">
+                <h5 className="text-xs font-bold text-foreground uppercase tracking-wider">
                   Indexed Curriculum Chunk Breakdown
                 </h5>
                 <div className="space-y-2 text-xs">
                   {[
-                    { title: "Full-Stack Cloud & DevOps Engineering", chunks: 320, pct: 26, color: "bg-blue-500" },
-                    { title: "Enterprise AI Engineering & Large Language Models", chunks: 410, pct: 33, color: "bg-indigo-500" },
-                    { title: "Advanced Python & Distributed Data Systems", chunks: 280, pct: 23, color: "bg-emerald-500" },
-                    { title: "Enterprise Cybersecurity & Zero Trust Systems", chunks: 230, pct: 18, color: "bg-amber-500" },
+                    { title: "Full-Stack Cloud & DevOps Engineering", chunks: 320, pct: 26, color: "bg-teal-600" },
+                    { title: "Enterprise AI Engineering & Large Language Models", chunks: 410, pct: 33, color: "bg-orange-500" },
+                    { title: "Advanced Python & Distributed Data Systems", chunks: 280, pct: 23, color: "bg-blue-600" },
+                    { title: "Enterprise Cybersecurity & Zero Trust Systems", chunks: 230, pct: 18, color: "bg-emerald-600" },
                   ].map((item, i) => (
                     <div key={i} className="space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-semibold text-slate-200">{item.title}</span>
-                        <span className="text-slate-400 font-mono">{item.chunks} Chunks ({item.pct}%)</span>
+                        <span className="font-semibold text-foreground">{item.title}</span>
+                        <span className="text-muted-foreground font-mono">{item.chunks} Chunks ({item.pct}%)</span>
                       </div>
-                      <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
                         <div className={`${item.color} h-full rounded-full`} style={{ width: `${item.pct}%` }} />
                       </div>
                     </div>

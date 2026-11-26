@@ -1,24 +1,26 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
+  Activity,
+  Award,
+  BarChart3,
   BookOpen,
   Calendar,
-  Award,
-  Sparkles,
-  FolderKanban,
-  Users,
   CheckSquare,
-  Layers,
-  BarChart3,
-  Activity,
-  PlusCircle,
-  HelpCircle,
-  User,
-  Key,
-  LifeBuoy,
-  Tag,
-  Server,
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  FolderKanban,
   GraduationCap,
+  HelpCircle,
+  Key,
+  Layers,
+  LayoutDashboard,
+  PlusCircle,
+  Server,
+  Sparkles,
+  Tag,
+  User,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
@@ -27,9 +29,18 @@ import { useAuth } from "@/hooks/useAuth";
 interface SidebarProps {
   isOpen: boolean;
   onClose?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+  onOpenCopilot?: () => void;
 }
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({
+  isOpen,
+  onClose,
+  collapsed = false,
+  onToggleCollapse,
+  onOpenCopilot,
+}: SidebarProps) {
   const location = useLocation();
   const { user, isAuthenticated, hasRole } = useAuth();
 
@@ -41,9 +52,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navigation = [
     {
-      title: "Learning Hub",
+      title: "Learning Studio",
       items: [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { name: "Course Catalog", href: "/courses", icon: Compass },
         { name: "My Courses", href: "/my-courses", icon: BookOpen },
         { name: "Calendar", href: "/calendar", icon: Calendar },
         { name: "Grades", href: "/grades", icon: Award },
@@ -52,9 +64,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       title: "Resources",
-      items: [
-        { name: "Private Files", href: "/private-files", icon: FolderKanban },
-      ],
+      items: [{ name: "Private Files", href: "/private-files", icon: FolderKanban }],
     },
     // ExcelR Operations (Track360) - Visible for Staff/Admin/Instructor, hidden for students
     ...(isAuthenticated && !isStudentOnly
@@ -114,58 +124,82 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs md:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar Container (Sleek Modern Obsidian Palette) */}
+      {/* Atelier Light/Dark Adaptive Studio Rail */}
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-40 flex w-64 flex-col border-r border-slate-800/80 bg-[#0B0F19] text-slate-300 transition-transform duration-200 ease-in-out md:translate-x-0 shadow-2xl",
+          "fixed top-0 bottom-0 left-0 z-40 flex flex-col border-r border-border bg-card text-foreground transition-all duration-200 ease-in-out md:translate-x-0 shadow-sm",
+          collapsed ? "md:w-20 w-64" : "w-64",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Brand Header */}
-        <div className="flex h-16 items-center gap-3 border-b border-slate-800/80 px-6 bg-[#080C14]">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/30">
-            <GraduationCap className="h-5 w-5" />
+        <div className="flex h-16 items-center justify-between border-b border-border px-4">
+          <div className={cn("flex items-center gap-2.5 overflow-hidden", collapsed && "md:mx-auto")}>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white shadow-[0_2px_0_0_#0f766e]">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            {!collapsed && (
+              <div className="truncate">
+                <span className="font-display font-bold text-lg tracking-tight text-foreground block leading-none">
+                  Learnova
+                </span>
+                <p className="text-[10px] font-mono text-teal-700 dark:text-teal-400 uppercase tracking-widest mt-1">
+                  AI Atelier
+                </p>
+              </div>
+            )}
           </div>
-          <div>
-            <span className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
-              Learnova
-            </span>
-            <p className="text-[10px] text-indigo-400 uppercase tracking-widest font-semibold">
-              Learning Platform
-            </p>
-          </div>
+
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="hidden md:flex w-6 h-6 items-center justify-center rounded-lg border border-border bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+            </button>
+          )}
         </div>
 
-        {/* User Identity Pill (if logged in) */}
+        {/* User Identity Card */}
         {isAuthenticated && user && (
-          <div className="px-4 pt-3.5 pb-1">
-            <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+          <div className="px-3 pt-3.5 pb-1">
+            <div
+              className={cn(
+                "p-2.5 rounded-xl bg-secondary/60 border border-border flex items-center gap-2.5",
+                collapsed && "md:justify-center md:px-1.5"
+              )}
+            >
+              <div className="w-8 h-8 shrink-0 rounded-full bg-teal-600 text-white font-bold text-xs flex items-center justify-center">
                 {user.first_name?.[0]}
                 {user.last_name?.[0]}
               </div>
-              <div className="overflow-hidden">
-                <p className="text-xs font-semibold text-white truncate">{user.full_name}</p>
-                <p className="text-[10px] text-indigo-300 font-mono truncate">{user.roles[0] || "STUDENT"}</p>
-              </div>
+              {!collapsed && (
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-foreground truncate">{user.full_name}</p>
+                  <p className="text-[10px] text-teal-700 dark:text-teal-400 font-mono truncate">
+                    {user.roles[0] || "STUDENT"}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
           {navigation.map((section, idx) => (
             <div key={idx} className="space-y-1">
-              {section.title && (
-                <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              {section.title && !collapsed && (
+                <p className="px-3 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
                   {section.title}
                 </p>
               )}
@@ -180,21 +214,28 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       key={item.name}
                       to={item.href}
                       onClick={onClose}
+                      title={collapsed ? item.name : undefined}
                       className={cn(
-                        "flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-all",
+                        "flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all",
+                        collapsed && "md:justify-center md:px-2",
                         isActive
-                          ? "bg-gradient-to-r from-indigo-600/90 to-indigo-700/80 text-white shadow-sm font-semibold border-l-2 border-cyan-400"
-                          : "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+                          ? "bg-teal-500/12 text-teal-800 dark:text-teal-300 border border-teal-500/25 shadow-xs"
+                          : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground border border-transparent"
                       )}
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon className={cn("h-4 w-4", isActive ? "text-cyan-300" : "text-slate-400")} />
-                        <span>{item.name}</span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            isActive ? "text-teal-600 dark:text-teal-400" : "text-muted-foreground"
+                          )}
+                        />
+                        {!collapsed && <span className="truncate">{item.name}</span>}
                       </div>
-                      {item.badge && (
+                      {!collapsed && item.badge && (
                         <Badge
                           variant={isActive ? "secondary" : "default"}
-                          className="text-[9px] px-1.5 py-0 h-4 bg-indigo-500/20 text-indigo-300 border-indigo-500/30"
+                          className="text-[9px] px-1.5 py-0 h-4 bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-500/25"
                         >
                           {item.badge}
                         </Badge>
@@ -207,14 +248,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </div>
 
-        {/* Bottom Support Widget */}
-        <div className="p-4 border-t border-slate-800/80 bg-[#080C14]">
+        {/* Bottom Interactive Copilot Quick Action */}
+        <div className="p-3 border-t border-border bg-secondary/30">
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+            onClick={() => {
+              onClose?.();
+              if (onOpenCopilot) {
+                onOpenCopilot();
+              } else {
+                window.dispatchEvent(new CustomEvent("open-ai-copilot"));
+              }
+            }}
+            title="Launch Learnova AI Copilot"
+            className={cn(
+              "w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-[0_2px_0_0_#0f766e] transition-all cursor-pointer",
+              collapsed && "md:px-0"
+            )}
           >
-            <LifeBuoy className="h-4 w-4" />
-            <span>Learnova Support</span>
+            <Sparkles className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>AI Study Copilot</span>}
           </button>
         </div>
       </aside>
